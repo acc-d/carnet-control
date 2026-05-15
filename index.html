@@ -733,6 +733,8 @@
     let activePilotId = pilots[0].id;
     let activeView = "card";
     let dismissedControlAlertKey = "";
+    let audioContext = null;
+    let lastBeepSecond = null;
     const $ = (selector) => document.querySelector(selector);
     const nowIsoMinute = () => {
       const d = new Date();
@@ -787,6 +789,28 @@
 
     function hideControlAlert() {
       $("#controlAlert").classList.add("is-hidden");
+      lastBeepSecond = null;
+    }
+
+    function beepCountdown(second) {
+      if (second < 0 || second > 10 || lastBeepSecond === second) return;
+      lastBeepSecond = second;
+      try {
+        audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.value = second === 0 ? 1100 : 880;
+        gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.18, audioContext.currentTime + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.16);
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.18);
+      } catch {
+        // Browsers may block audio until the user interacts with the page.
+      }
     }
 
     function checkUpcomingControlAlert() {
@@ -802,6 +826,7 @@
       $("#controlAlertText").textContent = `Hora ideal ${ideal}. Dirígete al próximo control.`;
       $("#controlCountdown").textContent = String(Math.max(0, remaining)).padStart(2, "0");
       $("#controlAlert").classList.remove("is-hidden");
+      beepCountdown(remaining);
     }
 
     function fillBaseSelects() {
