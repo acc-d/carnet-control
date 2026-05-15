@@ -240,6 +240,51 @@
     .notice { border-left: 4px solid var(--amber); padding: 12px; background: rgba(241,179,58,.1); color: #ffe0a6; font-size: 13px; line-height: 1.45; }
     .toast { position: fixed; right: 18px; bottom: 18px; z-index: 30; background: #101720; border: 1px solid var(--line); color: var(--ink); box-shadow: var(--shadow); border-radius: 8px; padding: 12px 14px; max-width: min(360px, calc(100vw - 36px)); transform: translateY(18px); opacity: 0; pointer-events: none; transition: .2s ease; font-size: 13px; }
     .toast.show { transform: translateY(0); opacity: 1; }
+    .control-alert {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: rgba(5, 8, 12, .72);
+      backdrop-filter: blur(8px);
+    }
+    .control-alert-card {
+      width: min(460px, 100%);
+      border: 1px solid rgba(227, 30, 36, .62);
+      border-radius: 8px;
+      background: #111821;
+      box-shadow: var(--shadow);
+      padding: 22px;
+      display: grid;
+      gap: 14px;
+    }
+    .control-alert-card span {
+      color: var(--red);
+      font-size: 12px;
+      font-weight: 950;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    .control-alert-card h2 {
+      margin: 0;
+      font-size: 26px;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+    .control-alert-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .countdown {
+      font-size: 64px;
+      line-height: .9;
+      font-weight: 950;
+      font-variant-numeric: tabular-nums;
+      color: white;
+    }
 
     @media (max-width: 1120px) {
       .app { grid-template-columns: 1fr; }
@@ -419,6 +464,15 @@
     </main>
   </div>
 
+  <div class="control-alert is-hidden" id="controlAlert" role="dialog" aria-modal="true" aria-labelledby="controlAlertTitle">
+    <div class="control-alert-card">
+      <span>Próximo control</span>
+      <h2 id="controlAlertTitle">Control horario</h2>
+      <p id="controlAlertText">Queda menos de un minuto para llegar al control.</p>
+      <div class="countdown" id="controlCountdown">60</div>
+      <button class="ghost-button" type="button" id="dismissControlAlert">Cerrar aviso</button>
+    </div>
+  </div>
   <div class="toast" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -678,6 +732,7 @@
     let activeRallyId = rallies[0].id;
     let activePilotId = pilots[0].id;
     let activeView = "card";
+    let dismissedControlAlertKey = "";
     const $ = (selector) => document.querySelector(selector);
     const nowIsoMinute = () => {
       const d = new Date();
@@ -713,6 +768,14 @@
     };
     const isPublished = () => role === "admin" || new Date() >= new Date(rally().publishAt);
     const nextControl = () => rally().controls.find((control) => !rally().records[activePilotId]?.[control.id]);
+    const secondsUntilTodayTime = (timeValue) => {
+      if (!timeValue) return null;
+      const [hours, minutesValue] = timeValue.split(":").map(Number);
+      if (!Number.isFinite(hours) || !Number.isFinite(minutesValue)) return null;
+      const target = new Date();
+      target.setHours(hours, minutesValue, 0, 0);
+      return Math.floor((target.getTime() - Date.now()) / 1000);
+    };
 
     function toast(message) {
       const node = $("#toast");
@@ -720,6 +783,25 @@
       node.classList.add("show");
       clearTimeout(window.toastTimer);
       window.toastTimer = setTimeout(() => node.classList.remove("show"), 2200);
+    }
+
+    function hideControlAlert() {
+      $("#controlAlert").classList.add("is-hidden");
+    }
+
+    function checkUpcomingControlAlert() {
+      if (role !== "pilot" || $("#appShell").classList.contains("is-hidden")) return hideControlAlert();
+      const active = rally();
+      const control = nextControl();
+      if (!active || !control || !isPublished()) return hideControlAlert();
+      const ideal = active.schedule?.[activePilotId]?.[control.id];
+      const remaining = secondsUntilTodayTime(ideal);
+      const alertKey = `${active.id}:${activePilotId}:${control.id}:${ideal}`;
+      if (remaining === null || remaining < 0 || remaining > 60 || dismissedControlAlertKey === alertKey) return hideControlAlert();
+      $("#controlAlertTitle").textContent = `${control.code} - ${control.place}`;
+      $("#controlAlertText").textContent = `Hora ideal ${ideal}. Dirígete al próximo control.`;
+      $("#controlCountdown").textContent = String(Math.max(0, remaining)).padStart(2, "0");
+      $("#controlAlert").classList.remove("is-hidden");
     }
 
     function fillBaseSelects() {
@@ -881,6 +963,7 @@
       $("#scheduleView").classList.toggle("is-hidden", activeView !== "schedule" || role !== "admin");
       fillControlSelect();
       syncActualTime();
+      checkUpcomingControlAlert();
       if (role === "admin") {
         renderControlsEditor();
         renderScheduleGrid();
@@ -1159,9 +1242,17 @@
       queueCarnetSave();
       toast("Control borrado");
     });
+    $("#dismissControlAlert").addEventListener("click", () => {
+      const active = rally();
+      const control = nextControl();
+      const ideal = control ? active.schedule?.[activePilotId]?.[control.id] : "";
+      dismissedControlAlertKey = control ? `${active.id}:${activePilotId}:${control.id}:${ideal}` : "";
+      hideControlAlert();
+    });
 
     fillBaseSelects();
     startCarnetRealtime();
+    setInterval(checkUpcomingControlAlert, 1000);
     render();
   </script>
 </body>
