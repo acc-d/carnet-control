@@ -1,0 +1,1168 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CARNET DE CONTROL ACC</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0f14;
+      --panel: #141a22;
+      --panel-2: #1d2530;
+      --ink: #f6f8fb;
+      --muted: #9aa8b7;
+      --line: #303a47;
+      --red: #e31e24;
+      --blue: #174ea6;
+      --green: #2dbb78;
+      --amber: #f1b33a;
+      --paper: #f7f7f2;
+      --paper-2: #e9ebee;
+      --paper-ink: #11151a;
+      --paper-muted: #5a626d;
+      --shadow: 0 24px 80px rgba(0, 0, 0, .38);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(118deg, rgba(227, 30, 36, .14), transparent 34%),
+        linear-gradient(242deg, rgba(23, 78, 166, .18), transparent 36%),
+        var(--bg);
+      color: var(--ink);
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .is-hidden { display: none !important; }
+
+    .login-screen { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+    .login-panel { width: min(920px, 100%); display: grid; grid-template-columns: 1fr 360px; gap: 22px; }
+    .login-hero, .login-card, .panel, .control-card-shell {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(20, 26, 34, .94);
+      box-shadow: var(--shadow);
+    }
+    .login-hero {
+      min-height: 430px;
+      padding: 28px;
+      display: grid;
+      align-content: space-between;
+      background:
+        linear-gradient(130deg, rgba(227, 30, 36, .18), transparent 38%),
+        linear-gradient(310deg, rgba(23, 78, 166, .18), transparent 38%),
+        var(--panel);
+    }
+    .login-hero h1 { margin: 12px 0 0; font-size: clamp(42px, 7vw, 82px); line-height: .92; text-transform: uppercase; }
+    .login-hero p, .login-card p { margin: 0; color: var(--muted); line-height: 1.5; }
+    .login-card { padding: 18px; display: grid; gap: 14px; align-content: start; }
+    .login-card h2, .panel-title h2 { margin: 0; font-size: 17px; text-transform: uppercase; letter-spacing: .04em; }
+    .role-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 4px; border: 1px solid var(--line); border-radius: 8px; background: #0f141b; }
+    .role-switch button { border: 0; border-radius: 6px; color: var(--muted); background: transparent; height: 36px; font-weight: 850; }
+    .role-switch button.active { color: white; background: var(--red); }
+
+    .brand { display: grid; grid-template-columns: 58px 1fr; gap: 12px; align-items: center; }
+    .brand-mark {
+      width: 58px; height: 58px; display: grid; place-items: center;
+      border: 1px solid var(--line); background: #000;
+      overflow: hidden; border-radius: 8px;
+    }
+    .brand-mark img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      transform: scale(1.9) translateY(-2%);
+    }
+    .brand strong { display: block; font-size: 15px; line-height: 1.1; text-transform: uppercase; }
+    .brand span { color: var(--muted); font-size: 12px; }
+
+    .app { min-height: 100vh; display: grid; grid-template-columns: 280px minmax(0, 1fr); }
+    .sidebar {
+      border-right: 1px solid var(--line);
+      background: rgba(10, 14, 20, .82);
+      padding: 24px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+    .nav { display: grid; gap: 10px; }
+    .nav-block { border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.03); padding: 12px; display: grid; gap: 8px; }
+    .nav-block span { color: var(--muted); font-size: 11px; font-weight: 850; text-transform: uppercase; }
+    .nav-block strong { font-size: 18px; line-height: 1.2; }
+    .sidebar-footer { margin-top: auto; border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: rgba(255,255,255,.03); }
+    .sidebar-footer span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+    .sidebar-footer strong { font-size: 22px; }
+
+    .main { padding: 28px; display: grid; gap: 20px; align-content: start; }
+    .topbar { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+    .event-title p { margin: 0 0 5px; color: var(--red); font-weight: 850; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; }
+    h1 { margin: 0; font-size: clamp(28px, 4vw, 48px); line-height: .98; text-transform: uppercase; }
+    .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .view-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .view-tab {
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      min-height: 40px;
+      border-radius: 8px;
+      padding: 0 14px;
+      font-weight: 850;
+    }
+    .view-tab.active { background: var(--panel-2); color: var(--ink); }
+    .page-view { display: grid; gap: 20px; }
+    .icon-button, .primary-button, .ghost-button {
+      border: 1px solid var(--line);
+      color: var(--ink);
+      min-height: 42px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      padding: 0 14px;
+      font-weight: 850;
+      background: var(--panel);
+    }
+    .icon-button { width: 42px; padding: 0; }
+    .primary-button { background: var(--red); border-color: #ff5d61; }
+    .ghost-button { background: transparent; }
+    .dashboard { display: grid; grid-template-columns: minmax(0, 1fr) minmax(380px, .9fr); gap: 20px; align-items: start; min-width: 0; }
+    .schedule-page { display: grid; gap: 16px; }
+    .schedule-toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto auto; gap: 10px; align-items: end; }
+    .schedule-toolbar .notice { grid-column: 1 / -1; padding: 8px 10px; }
+    .schedule-toolbar button { min-width: 132px; }
+
+    .control-card-shell { background: #222a35; padding: 14px; }
+    .control-card {
+      color: var(--paper-ink);
+      background:
+        linear-gradient(90deg, rgba(227,30,36,.92) 0 18px, transparent 18px),
+        linear-gradient(90deg, transparent 0 calc(100% - 18px), rgba(23,78,166,.92) calc(100% - 18px)),
+        linear-gradient(135deg, rgba(23,78,166,.10) 0 19%, transparent 19% 42%, rgba(227,30,36,.09) 42% 58%, transparent 58%),
+        repeating-linear-gradient(90deg, rgba(0,0,0,.045) 0 1px, transparent 1px 22px),
+        linear-gradient(var(--paper), var(--paper-2));
+      border: 2px solid #0f1318;
+      min-height: 720px;
+      position: relative;
+      overflow: hidden;
+    }
+    .control-card::after {
+      content: "FIA CONTROL CARD";
+      position: absolute;
+      right: 28px;
+      bottom: 118px;
+      color: rgba(17, 21, 26, .07);
+      font-size: 52px;
+      font-weight: 950;
+      transform: rotate(-8deg);
+      pointer-events: none;
+    }
+    .card-header { position: relative; display: grid; grid-template-columns: 1fr 132px; border-bottom: 3px solid #11151a; min-height: 118px; }
+    .card-title { padding: 18px 26px; }
+    .card-title span { display: block; color: var(--paper-muted); font-size: 12px; text-transform: uppercase; letter-spacing: .15em; font-weight: 950; margin-bottom: 8px; }
+    .card-title strong { display: block; font-size: clamp(32px, 4.7vw, 58px); line-height: .86; text-transform: uppercase; }
+    .car-number { background: #11151a; color: white; display: grid; place-items: center; border-left: 3px solid #11151a; font-weight: 950; font-size: 54px; }
+    .driver-strip { position: relative; display: grid; grid-template-columns: 1.12fr .9fr 1.1fr; border-bottom: 2px solid #11151a; margin-left: 18px; margin-right: 18px; }
+    .field { padding: 12px 14px; border-right: 2px solid #11151a; min-width: 0; background: rgba(255,255,255,.44); }
+    .field:last-child { border-right: 0; }
+    .field span, .metric span { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .11em; font-weight: 950; margin-bottom: 5px; }
+    .field span { color: var(--paper-muted); }
+    .field strong { display: block; font-size: 16px; line-height: 1.15; word-break: break-word; }
+    .stage-band { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); background: #11151a; color: white; border-bottom: 2px solid #11151a; margin-left: 18px; margin-right: 18px; }
+    .metric { padding: 12px 14px; border-right: 1px solid #3d4652; }
+    .metric:last-child { border-right: 0; }
+    .metric span { color: #b9c2cc; }
+    .metric strong { display: block; font-size: 21px; margin-top: 4px; }
+    .table-wrap { position: relative; padding: 16px 32px 14px; overflow-x: auto; }
+    table { width: 100%; min-width: 690px; border-collapse: collapse; table-layout: fixed; background: rgba(255,255,255,.5); }
+    th { background: #d9dee5; color: #11151a; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; padding: 9px 8px; border: 1px solid #11151a; font-weight: 950; }
+    td { border: 1px solid #11151a; padding: 10px 8px; vertical-align: top; font-size: 13px; line-height: 1.2; font-weight: 750; }
+    td small { display: block; color: var(--paper-muted); font-weight: 800; margin-top: 3px; }
+    .code { width: 82px; }
+    .time { width: 96px; font-variant-numeric: tabular-nums; }
+    .signature { width: 108px; }
+    .stamp {
+      color: #8f1017;
+      border: 3px solid #8f1017;
+      display: inline-block;
+      padding: 5px 10px;
+      text-transform: uppercase;
+      font-weight: 950;
+      transform: rotate(-5deg);
+      letter-spacing: .04em;
+      opacity: .86;
+    }
+    .late { background: rgba(227, 30, 36, .18); color: #8f1017; }
+    .ok { color: #0d6b42; }
+    .private-time { color: var(--paper-muted); font-style: italic; }
+    .card-footer { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 32px 16px; }
+    .sign-box { min-height: 84px; border: 2px dashed #555e69; padding: 10px; display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; background: rgba(255,255,255,.28); }
+    .sign-box span { color: var(--paper-muted); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; font-weight: 950; }
+    .sign-box strong { font-size: 28px; font-family: "Segoe Script", "Bradley Hand ITC", cursive; transform: rotate(-2deg); }
+
+    .side-panel { display: grid; gap: 16px; min-width: 0; }
+    .panel { padding: 16px; box-shadow: 0 16px 46px rgba(0,0,0,.22); min-width: 0; }
+    .panel-title { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .pill { border: 1px solid rgba(45,187,120,.5); color: #aff5d1; background: rgba(45,187,120,.1); border-radius: 999px; padding: 5px 9px; font-size: 12px; font-weight: 850; white-space: nowrap; }
+    .pilot-card { display: grid; grid-template-columns: 72px 1fr; gap: 14px; align-items: center; }
+    .avatar { width: 72px; aspect-ratio: 1; border-radius: 8px; background: linear-gradient(45deg, #f5f5f5 0 24%, #111 24% 38%, #f5f5f5 38% 62%, #111 62% 76%, #f5f5f5 76%); border: 1px solid var(--line); display: grid; place-items: center; color: var(--red); font-size: 24px; font-weight: 950; }
+    .pilot-card h2 { margin: 0 0 4px; font-size: 22px; }
+    .pilot-card p { margin: 0; color: var(--muted); font-size: 13px; }
+    .quick-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 16px; }
+    .stat { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-width: 0; }
+    .stat span { color: var(--muted); font-size: 11px; text-transform: uppercase; font-weight: 850; }
+    .stat strong { display: block; margin-top: 4px; font-size: 20px; font-variant-numeric: tabular-nums; }
+    label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; font-weight: 850; text-transform: uppercase; min-width: 0; }
+    input, select { width: 100%; min-width: 0; height: 42px; border-radius: 8px; border: 1px solid var(--line); background: #0f141b; color: var(--ink); padding: 0 11px; outline: 0; }
+    input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(78,161,255,.18); }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; min-width: 0; }
+    .side-panel .form-grid { grid-template-columns: 1fr; }
+    .control-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+    .schedule-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 8px; max-height: calc(100vh - 250px); min-height: 440px; }
+    .schedule-table { min-width: 1180px; background: #101720; color: var(--ink); }
+    .schedule-table th { position: sticky; top: 0; z-index: 2; background: #19212c; color: var(--ink); border-color: var(--line); }
+    .schedule-table th:first-child, .schedule-table td:first-child { position: sticky; left: 0; z-index: 1; background: #19212c; }
+    .schedule-table input { width: 112px; height: 36px; }
+    .schedule-table td { border-color: var(--line); color: var(--ink); background: #111821; }
+    .controls-table { min-width: 860px; background: #101720; color: var(--ink); }
+    .controls-table th { background: #19212c; color: var(--ink); border-color: var(--line); }
+    .controls-table td { border-color: var(--line); color: var(--ink); background: #111821; }
+    .controls-table input, .controls-table select { height: 36px; }
+    .controls-table .ghost-button { min-height: 36px; width: 100%; }
+    .notice { border-left: 4px solid var(--amber); padding: 12px; background: rgba(241,179,58,.1); color: #ffe0a6; font-size: 13px; line-height: 1.45; }
+    .toast { position: fixed; right: 18px; bottom: 18px; z-index: 30; background: #101720; border: 1px solid var(--line); color: var(--ink); box-shadow: var(--shadow); border-radius: 8px; padding: 12px 14px; max-width: min(360px, calc(100vw - 36px)); transform: translateY(18px); opacity: 0; pointer-events: none; transition: .2s ease; font-size: 13px; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    @media (max-width: 1120px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .dashboard { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .main { padding: 18px 12px; }
+      .topbar, .login-panel { display: grid; grid-template-columns: 1fr; }
+      .schedule-toolbar { grid-template-columns: 1fr; }
+      .actions { justify-content: start; }
+      .control-card-shell { padding: 8px; margin-inline: -4px; }
+      .control-card { min-height: 0; }
+      .card-header { grid-template-columns: 1fr 88px; min-height: 94px; }
+      .card-title { padding: 14px 20px; }
+      .card-title strong { font-size: 34px; }
+      .car-number { font-size: 38px; }
+      .driver-strip, .stage-band, .card-footer { grid-template-columns: 1fr; margin-left: 10px; margin-right: 10px; }
+      .field, .metric { border-right: 0; border-bottom: 1px solid #11151a; }
+      .table-wrap { padding: 10px; }
+      .card-footer { padding: 0 10px 10px; }
+      .quick-stats, .form-grid, .control-actions { grid-template-columns: 1fr; }
+      .login-hero { min-height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <section class="login-screen" id="loginScreen">
+    <div class="login-panel">
+      <div class="login-hero">
+        <div class="brand">
+          <div class="brand-mark"><img src="assets/acc-logo.png" alt="ACC"></div>
+          <div><strong>Carnet de Control ACC</strong><span>Carnet horario para rally simracing</span></div>
+        </div>
+        <div>
+          <h1>Control Horario</h1>
+        </div>
+      </div>
+      <form class="login-card" id="loginForm">
+        <h2>Entrar</h2>
+        <p>Accede con la misma cuenta que tienes en la página web de ACC.</p>
+        <label>Email<input id="loginEmail" type="email" autocomplete="email" placeholder="tu@email.com" required></label>
+        <label>Contraseña<input id="loginPassword" type="password" autocomplete="current-password" required></label>
+        <button class="primary-button" type="submit">Iniciar sesion</button>
+      </form>
+    </div>
+  </section>
+
+  <div class="app is-hidden" id="appShell">
+    <aside class="sidebar" aria-label="Resumen">
+      <div class="brand">
+        <div class="brand-mark"><img src="assets/acc-logo.png" alt="ACC"></div>
+        <div><strong>Carnet de Control ACC</strong><span>Carnet digital</span></div>
+      </div>
+      <div class="nav">
+        <div class="nav-block"><span>Rally activo</span><strong id="sideRally">--</strong></div>
+        <div class="nav-block"><span>Publicacion horarios</span><strong id="sidePublish">--</strong></div>
+      </div>
+      <div class="sidebar-footer"><span>Proximo control</span><strong id="nextControlSide">--</strong></div>
+    </aside>
+
+    <main class="main">
+      <section class="topbar" aria-label="Cabecera del evento">
+        <div class="event-title"><p id="eventMeta">--</p><h1 id="eventTitle">--</h1></div>
+        <div class="actions">
+          <select class="admin-only" id="rallySelect" title="Cambiar rally activo"></select>
+          <select class="pilot-only is-hidden" id="pilotRallySelect" title="Cambiar rally"></select>
+          <button class="primary-button admin-only" type="button" id="quickRegisterButton">Registrar siguiente</button>
+          <button class="ghost-button" type="button" id="logoutButton">Salir</button>
+        </div>
+      </section>
+
+      <section class="view-tabs admin-only" aria-label="Vistas de direccion">
+        <button class="view-tab active" type="button" data-view="card">Carnet</button>
+        <button class="view-tab" type="button" data-view="schedule">Horarios</button>
+      </section>
+
+      <section class="dashboard page-view" id="cardView">
+        <article class="control-card-shell" aria-label="Carnet de control">
+          <div class="control-card">
+            <header class="card-header">
+              <div class="card-title"><span>Carnet oficial de control horario</span><strong>Control Card</strong></div>
+              <div class="car-number" id="cardNumber">--</div>
+            </header>
+            <section class="driver-strip">
+              <div class="field"><span>Piloto</span><strong id="cardDriver">--</strong></div>
+              <div class="field"><span>Equipo</span><strong id="cardTeam">--</strong></div>
+              <div class="field"><span>Coche / Categoria</span><strong id="cardCar">--</strong></div>
+            </section>
+            <section class="stage-band">
+              <div class="metric"><span>Controles</span><strong id="metricChecks">--</strong></div>
+              <div class="metric"><span>Estado</span><strong id="metricStatus">--</strong></div>
+              <div class="metric"><span>Horarios</span><strong id="metricPublish">--</strong></div>
+            </section>
+            <div class="table-wrap">
+              <table aria-label="Carnet de controles">
+                <thead><tr><th class="code">Control</th><th>Lugar</th><th class="time">Hora ideal</th><th class="time">Hora real</th><th class="signature">Firma</th></tr></thead>
+                <tbody id="controlRows"></tbody>
+              </table>
+            </div>
+            <footer class="card-footer">
+              <div class="sign-box"><span>Firma comisario</span><strong id="marshalSign">--</strong></div>
+              <div class="sign-box"><span>Firma piloto</span><strong id="driverSign">--</strong></div>
+            </footer>
+          </div>
+        </article>
+
+        <aside class="side-panel">
+          <section class="panel">
+            <div class="panel-title"><h2>Piloto</h2><span class="pill" id="rolePill">Verificado</span></div>
+            <div class="pilot-card"><div class="avatar" id="pilotAvatar">--</div><div><h2 id="pilotName">--</h2><p id="pilotCar">--</p></div></div>
+            <div class="quick-stats"><div class="stat"><span>Controles firmados</span><strong id="statChecks">--</strong></div><div class="stat"><span>Siguiente</span><strong id="statNext">--</strong></div></div>
+          </section>
+
+          <section class="panel admin-only">
+            <div class="panel-title"><h2>Rallies activos</h2><span class="pill">Organizacion</span></div>
+            <div class="form-grid">
+              <label>Rally<select id="adminRally"></select></label>
+              <label>Mostrar horarios desde<input id="publishInput" type="datetime-local"></label>
+            </div>
+            <div class="control-actions">
+              <button class="ghost-button" type="button" id="savePublishButton">Guardar publicacion</button>
+              <button class="ghost-button" type="button" id="togglePublishButton">Publicar ahora</button>
+            </div>
+          </section>
+
+          <section class="panel admin-only">
+            <div class="panel-title"><h2>Inscritos</h2><span class="pill">Supabase</span></div>
+            <div class="notice">Importa pilotos desde tu gestor de inscripciones. Se usa licencia, dorsal, piloto, equipo, coche y categoria.</div>
+            <div class="control-actions">
+              <button class="primary-button" type="button" id="loadSupabaseButton">Cargar inscritos</button>
+              <button class="ghost-button" type="button" id="refreshSelectorsButton">Actualizar listas</button>
+            </div>
+            <div class="control-actions">
+              <button class="primary-button" type="button" id="saveCarnetButton">Guardar carnet</button>
+              <button class="ghost-button" type="button" id="loadCarnetButton">Cargar carnet</button>
+            </div>
+          </section>
+
+          <section class="panel admin-only">
+            <div class="panel-title"><h2>Registrar control</h2><span class="pill">Live</span></div>
+            <div class="form-grid">
+              <label>Piloto<input id="adminPilotSearch" list="pilotOptions" autocomplete="off" placeholder="Busca por nombre, dorsal o equipo"><datalist id="pilotOptions"></datalist></label>
+              <label>Control<select id="controlSelect"></select></label>
+              <label>Hora real<input id="actualTimeInput" type="time"></label>
+              <label>Comisario<input id="marshalInput" value="Direccion Rally"></label>
+            </div>
+            <div class="control-actions"><button class="primary-button" type="button" id="registerButton">Registrar</button><button class="ghost-button" type="button" id="clearButton">Borrar control</button></div>
+          </section>
+
+        </aside>
+      </section>
+
+      <section class="schedule-page page-view is-hidden admin-only" id="scheduleView">
+        <section class="panel">
+          <div class="panel-title"><h2>Controles del rally</h2><span class="pill">Itinerario</span></div>
+          <div class="notice">Modifica aqui los controles de este rally: codigo, lugar y descripcion. La matriz de horarios se actualiza con esas columnas.</div>
+          <div class="schedule-wrap" style="min-height:0;max-height:320px"><table class="controls-table" id="controlsTable"></table></div>
+          <div class="control-actions">
+            <button class="primary-button" type="button" id="addControlButton">Añadir control</button>
+            <button class="ghost-button" type="button" id="renumberControlsButton">Renumerar CH/TC</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><h2>Matriz de horas ideales</h2><span class="pill">Pantalla completa</span></div>
+          <div class="schedule-toolbar">
+            <label>Rally<select id="scheduleRally"></select></label>
+            <label>Mostrar horarios desde<input id="schedulePublishInput" type="datetime-local"></label>
+            <div class="notice">Edita los horarios directamente. Filas = pilotos inscritos, columnas = controles del rally.</div>
+            <button class="ghost-button" type="button" id="scheduleSavePublishButton">Guardar publicacion</button>
+            <button class="primary-button" type="button" id="schedulePublishNowButton">Publicar ahora</button>
+          </div>
+          <div class="schedule-wrap"><table class="schedule-table" id="scheduleTable"></table></div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const INSCRIPTIONS_SUPABASE_URL = "https://xlxvuhfwabrikxmmawba.supabase.co";
+    const INSCRIPTIONS_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhseHZ1aGZ3YWJyaWt4bW1hd2JhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDMxMjcsImV4cCI6MjA5MjcxOTEyN30.gRodacVpS0U5qLsXtAF6-4vP97RbluCpH_Iy2Y-toxY";
+    const CARNET_STATE_ID = 2;
+    const CLIENT_ID = crypto.randomUUID();
+    const AUTH_SUPABASE_URL = "https://qfjdwfwfkhefwrpmigev.supabase.co";
+    const AUTH_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmamR3Zndma2hlZndycG1pZ2V2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3OTY1MDgsImV4cCI6MjA5MzM3MjUwOH0.pqnFfi5Q3VTc6QTcwiOum5kJigg8nGkqDVDj72zUHd0";
+    const ADMIN_EMAILS = [];
+    const demoInscripciones = [
+      { licenciaPiloto: "PIL26_0084", dorsal: "27", piloto: "Javier Garcia", equipo: "Apex Gravel Team", coche: "Hyundai i20 N", categoria: "Rally2" },
+      { licenciaPiloto: "PIL26_0154", dorsal: "14", piloto: "Nerea Lopez", equipo: "North Pace Motorsport", coche: "Ford Fiesta", categoria: "Rally3" },
+      { licenciaPiloto: "PIL26_0170", dorsal: "33", piloto: "Alex Martin", equipo: "Virtual Stage Club", coche: "Skoda Fabia RS", categoria: "Rally2" }
+    ];
+
+    function pilotsFromRegistrationEntries(entries) {
+      return entries.map((entry, index) => ({
+        id: entry.licenciaPiloto,
+        license: entry.licenciaPiloto,
+        name: entry.piloto,
+        email: entry.email || "",
+        short: entry.piloto.split(/\s+/).filter(Boolean).map((part, i) => i ? part[0] + "." : part).join(" "),
+        number: entry.dorsal || String(index + 1).padStart(2, "0"),
+        team: entry.equipo || "Sin equipo",
+        car: entry.coche || "Sin coche",
+        category: entry.categoria || "Sin categoria"
+      }));
+    }
+
+    let pilots = pilotsFromRegistrationEntries(demoInscripciones);
+    const getEntryField = (entry, names) => {
+      for (const name of names) {
+        if (entry[name] !== undefined && entry[name] !== null && String(entry[name]).trim() !== "") return String(entry[name]).trim();
+      }
+      return "";
+    };
+    const normalizeRegistrationEntry = (entry) => ({
+      championship: getEntryField(entry, ["championship", "Campeonato"]),
+      rally: getEntryField(entry, ["rally", "Rallye"]),
+      licenciaPiloto: getEntryField(entry, ["licenciaPiloto", "Licencia Piloto", "licencia piloto"]),
+      email: getEntryField(entry, ["email", "Email", "EMAIL"]),
+      dorsal: getEntryField(entry, ["dorsal", "Dorsal"]),
+      piloto: getEntryField(entry, ["piloto", "Piloto"]),
+      equipo: getEntryField(entry, ["equipo", "Equipo"]),
+      coche: getEntryField(entry, ["coche", "Coche"]),
+      categoria: getEntryField(entry, ["categoria", "Categoria", "categoría", "Categoría"])
+    });
+
+    const defaultControls = [
+      { id: "ch0", code: "CH 0", place: "Salida parque", note: "Parque cerrado", type: "CH" },
+      { id: "tc1", code: "TC 1", place: "Salida tramo 1", note: "Control previo a tramo", type: "TC" },
+      { id: "ch1a", code: "CH 1A", place: "Asistencia IN", note: "Entrada service", type: "CH" },
+      { id: "tc2", code: "TC 2", place: "Salida tramo 2", note: "Control previo a tramo", type: "TC" }
+    ];
+
+    let rallies = [
+      {
+        id: "sierra",
+        name: "Rally Sierra Norte",
+        meta: "Temporada 2026 - Fecha 03",
+        publishAt: "2026-05-15T19:30",
+        controls: [
+          { id: "ch0", code: "CH 0", place: "Salida parque", note: "Parque cerrado", type: "CH" },
+          { id: "tc1", code: "TC 1", place: "Puerto del Pinar", note: "Salida tramo 1", type: "TC" },
+          { id: "ch1a", code: "CH 1A", place: "Asistencia IN", note: "Entrada service", type: "CH" },
+          { id: "tc2", code: "TC 2", place: "Las Minas", note: "Salida tramo 2", type: "TC" },
+          { id: "ch2a", code: "CH 2A", place: "Reagrupamiento", note: "Entrada", type: "CH" },
+          { id: "tc3", code: "TC 3", place: "Cerro Blanco", note: "Salida tramo 3", type: "TC" }
+        ],
+        schedule: {
+          PIL26_0084: { ch0: "20:00", tc1: "20:13", ch1a: "20:31", tc2: "20:58", ch2a: "21:18", tc3: "21:41" },
+          PIL26_0154: { ch0: "20:03", tc1: "20:16", ch1a: "20:34", tc2: "21:01", ch2a: "21:21", tc3: "21:44" },
+          PIL26_0170: { ch0: "19:57", tc1: "20:10", ch1a: "20:28", tc2: "20:55", ch2a: "21:15", tc3: "21:38" }
+        },
+        records: {
+          PIL26_0084: { ch0: { actual: "20:00", marshal: "Marcos" }, tc1: { actual: "20:13", marshal: "Laura" }, ch1a: { actual: "20:32", marshal: "Marcos" } },
+          PIL26_0154: { ch0: { actual: "20:03", marshal: "Marcos" } },
+          PIL26_0170: { ch0: { actual: "19:57", marshal: "Marcos" }, tc1: { actual: "20:11", marshal: "Laura" } }
+        }
+      },
+      {
+        id: "costa",
+        name: "Rally Costa Verde",
+        meta: "Temporada 2026 - Fecha 04",
+        publishAt: "2026-05-18T20:00",
+        controls: [
+          { id: "ch0", code: "CH 0", place: "Salida ceremonial", note: "Parque cerrado", type: "CH" },
+          { id: "tc1", code: "TC 1", place: "Acantilado", note: "Salida tramo 1", type: "TC" },
+          { id: "ch1a", code: "CH 1A", place: "Repostaje", note: "Entrada zona tecnica", type: "CH" },
+          { id: "tc2", code: "TC 2", place: "Bosque Norte", note: "Salida tramo 2", type: "TC" }
+        ],
+        schedule: {
+          PIL26_0084: { ch0: "19:45", tc1: "20:02", ch1a: "20:26", tc2: "20:49" },
+          PIL26_0154: { ch0: "19:48", tc1: "20:05", ch1a: "20:29", tc2: "20:52" },
+          PIL26_0170: { ch0: "19:42", tc1: "19:59", ch1a: "20:23", tc2: "20:46" }
+        },
+        records: { PIL26_0084: {}, PIL26_0154: {}, PIL26_0170: {} }
+      }
+    ];
+
+    function slug(text) {
+      return String(text || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") || "rally";
+    }
+
+    function buildRalliesFromRegistrationEntries(entries) {
+      const cleanEntries = entries
+        .map(normalizeRegistrationEntry)
+        .filter((entry) => entry.licenciaPiloto && entry.piloto && entry.rally);
+      const uniquePilots = new Map();
+      const groups = new Map();
+      cleanEntries.forEach((entry) => {
+        uniquePilots.set(entry.licenciaPiloto, entry);
+        const key = `${entry.championship || "General"}||${entry.rally}`;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(entry);
+      });
+      pilots = pilotsFromRegistrationEntries([...uniquePilots.values()]);
+      return [...groups.entries()].map(([key, group]) => {
+        const [championship, rallyName] = key.split("||");
+        const schedule = Object.fromEntries(group.map((entry) => [entry.licenciaPiloto, {}]));
+        const records = Object.fromEntries(group.map((entry) => [entry.licenciaPiloto, {}]));
+        const pilotData = Object.fromEntries(pilotsFromRegistrationEntries(group).map((p) => [p.id, p]));
+        return {
+          id: slug(`${championship}-${rallyName}`),
+          name: rallyName,
+          meta: championship,
+          publishAt: nowIsoMinute(),
+          controls: defaultControls.map((control) => ({ ...control })),
+          pilotIds: group.map((entry) => entry.licenciaPiloto),
+          pilotData,
+          schedule,
+          records
+        };
+      });
+    }
+
+    function serializeCarnetState() {
+      return {
+        version: 1,
+        origin: CLIENT_ID,
+        savedAt: new Date().toISOString(),
+        rallies: rallies.map((active) => ({
+          id: active.id,
+          name: active.name,
+          meta: active.meta,
+          publishAt: active.publishAt,
+          controls: active.controls,
+          pilotIds: active.pilotIds || [],
+          schedule: active.schedule || {},
+          records: active.records || {}
+        }))
+      };
+    }
+
+    function mergeCarnetState(savedState) {
+      const savedRallies = Array.isArray(savedState?.rallies) ? savedState.rallies : [];
+      const savedById = new Map(savedRallies.map((item) => [item.id, item]));
+      rallies = rallies.map((active) => {
+        const saved = savedById.get(active.id);
+        if (!saved) return active;
+        const pilotIds = active.pilotIds || [];
+        const cleanSchedule = Object.fromEntries(pilotIds.map((id) => [id, saved.schedule?.[id] || active.schedule?.[id] || {}]));
+        const cleanRecords = Object.fromEntries(pilotIds.map((id) => [id, saved.records?.[id] || active.records?.[id] || {}]));
+        return {
+          ...active,
+          publishAt: saved.publishAt || active.publishAt,
+          controls: Array.isArray(saved.controls) && saved.controls.length ? saved.controls : active.controls,
+          schedule: cleanSchedule,
+          records: cleanRecords
+        };
+      });
+    }
+
+    let inscriptionsDb = null;
+    let carnetRealtimeChannel = null;
+    let autosaveTimer = null;
+    let lastRemoteSavedAt = "";
+
+    function getInscriptionsDb() {
+      inscriptionsDb ||= window.supabase.createClient(INSCRIPTIONS_SUPABASE_URL, INSCRIPTIONS_SUPABASE_ANON_KEY);
+      return inscriptionsDb;
+    }
+
+    function queueCarnetSave() {
+      if (role !== "admin") return;
+      clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(() => saveCarnetState({ silent: true }), 700);
+    }
+
+    async function saveCarnetState(options = {}) {
+      try {
+        const db = getInscriptionsDb();
+        const payload = serializeCarnetState();
+        const { error } = await db
+          .from("rally_app_state")
+          .upsert({ id: CARNET_STATE_ID, data: payload, updated_at: new Date().toISOString() }, { onConflict: "id" });
+        if (error) throw error;
+        lastRemoteSavedAt = payload.savedAt;
+        if (!options.silent) toast("Carnet guardado en Supabase");
+      } catch (error) {
+        toast(`No se pudo guardar: ${error.message}`);
+      }
+    }
+
+    async function loadCarnetState(options = {}) {
+      try {
+        const db = getInscriptionsDb();
+        const { data, error } = await db
+          .from("rally_app_state")
+          .select("data,updated_at")
+          .eq("id", CARNET_STATE_ID)
+          .maybeSingle();
+        if (error) throw error;
+        if (!data?.data) {
+          if (!options.silent) toast("Aun no hay datos de carnet guardados");
+          return false;
+        }
+        mergeCarnetState(data.data);
+        lastRemoteSavedAt = data.data.savedAt || "";
+        render();
+        if (!options.silent) toast("Carnet cargado desde Supabase");
+        return true;
+      } catch (error) {
+        toast(`No se pudo cargar: ${error.message}`);
+        return false;
+      }
+    }
+
+    function startCarnetRealtime() {
+      if (carnetRealtimeChannel || !window.supabase) return;
+      const db = getInscriptionsDb();
+      carnetRealtimeChannel = db
+        .channel("carnet-control-acc")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "rally_app_state", filter: `id=eq.${CARNET_STATE_ID}` },
+          (payload) => {
+            const data = payload.new?.data;
+            if (!data || data.origin === CLIENT_ID || data.savedAt === lastRemoteSavedAt) return;
+            mergeCarnetState(data);
+            lastRemoteSavedAt = data.savedAt || "";
+            render();
+            toast("Carnet actualizado en tiempo real");
+          }
+        )
+        .subscribe();
+    }
+
+    let role = "pilot";
+    let activeRallyId = rallies[0].id;
+    let activePilotId = pilots[0].id;
+    let activeView = "card";
+    const $ = (selector) => document.querySelector(selector);
+    const nowIsoMinute = () => {
+      const d = new Date();
+      d.setSeconds(0, 0);
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+    const nowTime = () => new Date().toTimeString().slice(0, 5);
+    const minutes = (value) => {
+      if (!value) return null;
+      const [h, m] = value.split(":").map(Number);
+      return h * 60 + m;
+    };
+    const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]);
+    const rally = () => rallies.find((item) => item.id === activeRallyId);
+    const pilot = () => pilots.find((item) => item.id === activePilotId);
+    const rallyPilot = (id = activePilotId) => rally()?.pilotData?.[id] || pilots.find((item) => item.id === id);
+    const ralliesForPilot = (license = activePilotId) => rallies.filter((item) => item.pilotIds?.includes(license) || item.schedule?.[license] || item.records?.[license]);
+    const rallyPilots = () => {
+      const ids = rally()?.pilotIds;
+      return ids?.length ? ids.map((id) => rallyPilot(id)).filter(Boolean) : pilots;
+    };
+    const pilotLabel = (p) => `#${p.number} - ${p.name} - ${p.team}`;
+    const findPilotFromSearch = (value) => {
+      const text = String(value || "").trim().toLowerCase();
+      if (!text) return null;
+      const searchPool = rallyPilots().length ? rallyPilots() : pilots;
+      if (searchPool.find((p) => p.id === value)) return searchPool.find((p) => p.id === value);
+      const exact = searchPool.find((p) => pilotLabel(p).toLowerCase() === text || p.number === text);
+      if (exact) return exact;
+      const matches = searchPool.filter((p) => [p.id, p.name, p.number, p.team, p.car, p.category].some((field) => String(field).toLowerCase().includes(text)));
+      return matches.length === 1 ? matches[0] : null;
+    };
+    const isPublished = () => role === "admin" || new Date() >= new Date(rally().publishAt);
+    const nextControl = () => rally().controls.find((control) => !rally().records[activePilotId]?.[control.id]);
+
+    function toast(message) {
+      const node = $("#toast");
+      node.textContent = message;
+      node.classList.add("show");
+      clearTimeout(window.toastTimer);
+      window.toastTimer = setTimeout(() => node.classList.remove("show"), 2200);
+    }
+
+    function fillBaseSelects() {
+      const pilotOptions = pilots.map((p) => `<option value="${p.id}">#${p.number} - ${p.name}</option>`).join("");
+      const rallyOptions = rallies.map((r) => `<option value="${r.id}">${r.name}</option>`).join("");
+      if ($("#loginUser")) $("#loginUser").innerHTML = pilotOptions;
+      $("#pilotOptions").innerHTML = pilots.map((p) => `<option value="${esc(pilotLabel(p))}"></option>`).join("");
+      if ($("#loginRally")) $("#loginRally").innerHTML = rallyOptions;
+      $("#rallySelect").innerHTML = rallyOptions;
+      $("#adminRally").innerHTML = rallyOptions;
+      $("#scheduleRally").innerHTML = rallyOptions;
+    }
+
+    function fillPilotRallySelect() {
+      const available = role === "pilot" ? ralliesForPilot(activePilotId) : rallies;
+      $("#pilotRallySelect").innerHTML = available.map((r) => `<option value="${r.id}">${esc(r.name)}</option>`).join("");
+      $("#pilotRallySelect").value = activeRallyId;
+    }
+
+    function fillControlSelect() {
+      $("#controlSelect").innerHTML = rally().controls.map((control) => `<option value="${control.id}">${control.code} - ${control.place}</option>`).join("");
+    }
+
+    function syncActualTime() {
+      const records = rally().records[activePilotId] || {};
+      const controlId = $("#controlSelect").value;
+      $("#actualTimeInput").value = records[controlId]?.actual || nowTime();
+    }
+
+    function renderControlsEditor() {
+      const active = rally();
+      $("#controlsTable").innerHTML = `
+        <thead><tr><th>Codigo</th><th>Lugar</th><th>Descripcion</th><th>Tipo</th><th>Accion</th></tr></thead>
+        <tbody>
+          ${active.controls.map((control) => `
+            <tr>
+              <td><input value="${esc(control.code)}" data-control-field="code" data-control-id="${esc(control.id)}" aria-label="Codigo ${esc(control.code)}"></td>
+              <td><input value="${esc(control.place)}" data-control-field="place" data-control-id="${esc(control.id)}" aria-label="Lugar ${esc(control.code)}"></td>
+              <td><input value="${esc(control.note)}" data-control-field="note" data-control-id="${esc(control.id)}" aria-label="Descripcion ${esc(control.code)}"></td>
+              <td>
+                <select data-control-field="type" data-control-id="${esc(control.id)}" aria-label="Tipo ${esc(control.code)}">
+                  <option value="CH" ${control.type === "CH" ? "selected" : ""}>CH</option>
+                  <option value="TC" ${control.type === "TC" ? "selected" : ""}>TC</option>
+                  <option value="SERVICE" ${control.type === "SERVICE" ? "selected" : ""}>Service</option>
+                </select>
+              </td>
+              <td><button class="ghost-button" type="button" data-delete-control="${esc(control.id)}">Borrar</button></td>
+            </tr>
+          `).join("")}
+        </tbody>`;
+      $("#controlsTable").querySelectorAll("[data-control-field]").forEach((input) => {
+        input.addEventListener("change", () => {
+          const control = active.controls.find((item) => item.id === input.dataset.controlId);
+          if (!control) return;
+          control[input.dataset.controlField] = input.value.trim();
+          render();
+          queueCarnetSave();
+          toast("Control actualizado");
+        });
+      });
+      $("#controlsTable").querySelectorAll("[data-delete-control]").forEach((button) => {
+        button.addEventListener("click", () => {
+          deleteControl(button.dataset.deleteControl);
+        });
+      });
+    }
+
+    function renderScheduleGrid() {
+      const active = rally();
+      const head = `<thead><tr><th>Piloto</th>${active.controls.map((control) => `<th>${esc(control.code)}</th>`).join("")}</tr></thead>`;
+      const body = rallyPilots().map((p) => {
+        const cells = active.controls.map((control) => {
+          const value = active.schedule[p.id]?.[control.id] || "";
+          return `<td><input type="time" value="${esc(value)}" data-pilot="${p.id}" data-control="${control.id}" aria-label="${esc(p.name)} ${esc(control.code)}"></td>`;
+        }).join("");
+        return `<tr><td><strong>#${esc(p.number)} - ${esc(p.name)}</strong><small>${esc(p.car)} - ${esc(p.category)}</small></td>${cells}</tr>`;
+      }).join("");
+      $("#scheduleTable").innerHTML = head + `<tbody>${body}</tbody>`;
+      $("#scheduleTable").querySelectorAll("input").forEach((input) => {
+        input.addEventListener("change", () => {
+          const active = rally();
+          active.schedule[input.dataset.pilot] ||= {};
+          active.schedule[input.dataset.pilot][input.dataset.control] = input.value;
+          render();
+          queueCarnetSave();
+          toast("Hora ideal guardada");
+        });
+      });
+    }
+
+    function render() {
+      const active = rally();
+      const allowedPilots = rallyPilots();
+      if (!allowedPilots.length) {
+        if (role === "pilot") {
+          $("#loginScreen").classList.remove("is-hidden");
+          $("#appShell").classList.add("is-hidden");
+          toast("No estás inscrito en ninguna prueba");
+        }
+        return;
+      }
+      if (allowedPilots.length && !allowedPilots.some((item) => item.id === activePilotId)) activePilotId = allowedPilots[0].id;
+      const p = rallyPilot() || pilot();
+      $("#pilotOptions").innerHTML = rallyPilots().map((item) => `<option value="${esc(pilotLabel(item))}"></option>`).join("");
+      const records = active.records[activePilotId] || {};
+      const schedule = active.schedule[activePilotId] || {};
+      const published = isPublished();
+      const completed = active.controls.filter((control) => records[control.id]).length;
+      const next = nextControl();
+      $("#eventMeta").textContent = active.meta;
+      $("#eventTitle").textContent = active.name;
+      $("#sideRally").textContent = active.name;
+      $("#sidePublish").textContent = new Date(active.publishAt).toLocaleString();
+      $("#nextControlSide").textContent = next ? `${next.code} - ${published ? schedule[next.id] || "--:--" : "oculto"}` : "Carnet completo";
+      $("#cardNumber").textContent = p.number;
+      $("#cardDriver").textContent = p.name;
+      $("#cardTeam").textContent = p.team;
+      $("#cardCar").textContent = `${p.car} - ${p.category}`;
+      $("#metricChecks").textContent = `${completed} / ${active.controls.length}`;
+      $("#metricStatus").textContent = completed === active.controls.length ? "Completo" : "En curso";
+      $("#metricPublish").textContent = published ? "Visibles" : "Ocultos";
+      $("#marshalSign").textContent = Object.values(records).at(-1)?.marshal || "--";
+      $("#driverSign").textContent = p.short;
+      $("#pilotAvatar").textContent = p.number;
+      $("#pilotName").textContent = p.name;
+      $("#pilotCar").textContent = `${p.car} - Categoria ${p.category}`;
+      $("#statChecks").textContent = String(completed).padStart(2, "0");
+      $("#statNext").textContent = next ? next.code : "Fin";
+      $("#rolePill").textContent = role === "admin" ? "Admin" : "Piloto";
+      $("#publishInput").value = active.publishAt;
+      $("#rallySelect").value = active.id;
+      fillPilotRallySelect();
+      $("#adminRally").value = active.id;
+      $("#scheduleRally").value = active.id;
+      $("#schedulePublishInput").value = active.publishAt;
+      $("#adminPilotSearch").value = pilotLabel(p);
+      $("#cardView").classList.toggle("is-hidden", activeView !== "card");
+      $("#scheduleView").classList.toggle("is-hidden", activeView !== "schedule" || role !== "admin");
+      document.querySelectorAll(".view-tab").forEach((button) => button.classList.toggle("active", button.dataset.view === activeView));
+
+      $("#controlRows").innerHTML = active.controls.map((control) => {
+        const ideal = schedule[control.id];
+        const record = records[control.id];
+        const visibleIdeal = published ? ideal || "--:--" : "No publicado";
+        const diff = record && ideal ? minutes(record.actual) - minutes(ideal) : 0;
+        const isLate = Boolean(record && ideal && diff !== 0);
+        const stamp = record ? (isLate ? "Late" : "OK") : "";
+        return `<tr class="${isLate ? "late" : ""}">
+          <td>${esc(control.code)}</td>
+          <td>${esc(control.place)}<small>${esc(control.note)}</small></td>
+          <td class="time ${published ? "" : "private-time"}">${esc(visibleIdeal)}</td>
+          <td class="time ${record && !isLate ? "ok" : ""}">${record ? esc(record.actual) : "--:--"}</td>
+          <td>${stamp ? `<span class="stamp">${stamp}</span>` : ""}</td>
+        </tr>`;
+      }).join("");
+
+      document.querySelectorAll(".admin-only").forEach((node) => node.classList.toggle("is-hidden", role !== "admin"));
+      document.querySelectorAll(".pilot-only").forEach((node) => node.classList.toggle("is-hidden", role !== "pilot"));
+      $("#scheduleView").classList.toggle("is-hidden", activeView !== "schedule" || role !== "admin");
+      fillControlSelect();
+      syncActualTime();
+      if (role === "admin") {
+        renderControlsEditor();
+        renderScheduleGrid();
+      }
+    }
+
+    async function loadAccessProfile(db, user) {
+      const select = "id,nombre,apellido,email,licencia_piloto,role,is_admin";
+      let { data, error } = await db
+        .from("profiles")
+        .select(select)
+        .eq("id", user.id)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data && user.email) {
+        const byEmail = await db
+          .from("profiles")
+          .select(select)
+          .eq("email", user.email)
+          .maybeSingle();
+        if (byEmail.error) throw byEmail.error;
+        data = byEmail.data;
+      }
+      return data;
+    }
+
+    function userIsAdmin(user, profile) {
+      const email = String(profile?.email || user?.email || "").toLowerCase();
+      const metadataRole = String(user?.user_metadata?.role || user?.app_metadata?.role || "").toLowerCase();
+      const profileRole = String(profile?.role || "").toLowerCase();
+      return ADMIN_EMAILS.map((item) => item.toLowerCase()).includes(email) || profileRole === "admin" || profile?.is_admin === true || metadataRole === "admin" || user?.user_metadata?.is_admin === true || user?.app_metadata?.is_admin === true;
+    }
+
+    function userRole(user, profile) {
+      const metadataRole = String(user?.user_metadata?.role || user?.app_metadata?.role || "").toLowerCase();
+      const profileRole = String(profile?.role || "").toLowerCase();
+      if (profileRole === "admin" || metadataRole === "admin" || userIsAdmin(user, profile)) return "admin";
+      return "pilot";
+    }
+
+    function licenseFromUser(user, profile) {
+      const email = String(profile?.email || user?.email || "").toLowerCase();
+      if (profile?.licencia_piloto) return String(profile.licencia_piloto).trim();
+      const metadataLicense = user?.user_metadata?.licenciaPiloto || user?.user_metadata?.licencia_piloto || user?.user_metadata?.license || user?.app_metadata?.licenciaPiloto;
+      if (metadataLicense) return String(metadataLicense).trim();
+      for (const active of rallies) {
+        const ids = active.pilotIds || Object.keys(active.schedule || {});
+        for (const id of ids) {
+          const p = active.pilotData?.[id] || pilots.find((item) => item.id === id);
+          if (String(p?.email || "").toLowerCase() === email) return id;
+        }
+      }
+      return "";
+    }
+
+    function selectFirstRallyForPilot(license) {
+      const found = rallies.find((item) => item.pilotIds?.includes(license) || item.schedule?.[license]);
+      if (found) activeRallyId = found.id;
+    }
+
+    function selectPilotRally(rallyId) {
+      const available = ralliesForPilot(activePilotId);
+      if (available.some((item) => item.id === rallyId)) {
+        activeRallyId = rallyId;
+        render();
+      }
+    }
+
+    function addControl() {
+      const active = rally();
+      const index = active.controls.length + 1;
+      const id = `ctrl_${Date.now()}`;
+      active.controls.push({
+        id,
+        code: `CH ${index}`,
+        place: "Nuevo control",
+        note: "Lugar pendiente",
+        type: "CH"
+      });
+      render();
+      queueCarnetSave();
+      toast("Control añadido");
+    }
+
+    function deleteControl(controlId) {
+      const active = rally();
+      active.controls = active.controls.filter((control) => control.id !== controlId);
+      Object.values(active.schedule || {}).forEach((pilotSchedule) => delete pilotSchedule[controlId]);
+      Object.values(active.records || {}).forEach((pilotRecords) => delete pilotRecords[controlId]);
+      render();
+      queueCarnetSave();
+      toast("Control borrado");
+    }
+
+    function renumberControls() {
+      const counters = { CH: 0, TC: 0, SERVICE: 0 };
+      rally().controls.forEach((control) => {
+        const type = control.type || "CH";
+        counters[type] = (counters[type] || 0) + 1;
+        if (type === "SERVICE") control.code = `SERVICE ${counters[type]}`;
+        else control.code = `${type} ${type === "CH" ? counters[type] - 1 : counters[type]}`;
+      });
+      render();
+      queueCarnetSave();
+      toast("Controles renumerados");
+    }
+
+    async function login() {
+      if (!window.supabase) return toast("No se pudo cargar Supabase Auth");
+      const email = $("#loginEmail").value.trim();
+      const password = $("#loginPassword").value;
+      if (!email || !password) return toast("Introduce email y contraseña");
+      const db = window.supabase.createClient(AUTH_SUPABASE_URL, AUTH_SUPABASE_ANON_KEY);
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
+      if (error) return toast(`Login: ${error.message}`);
+      let profile = null;
+      try {
+        profile = await loadAccessProfile(db, data.user);
+      } catch (profileError) {
+        return toast(`Perfil: ${profileError.message}`);
+      }
+      if (!profile) return toast("No encuentro tu perfil de usuario");
+      await loadRegistrationsFromSupabase({ silent: true });
+      role = userRole(data.user, profile);
+      activeView = "card";
+      if (role === "admin") {
+        activePilotId = rallyPilots()[0]?.id || pilots[0]?.id;
+      } else {
+        const license = licenseFromUser(data.user, profile);
+        if (!license) return toast("No encuentro tu licencia de piloto vinculada a esta cuenta");
+        if (!ralliesForPilot(license).length) return toast("No estás inscrito en ninguna prueba");
+        activePilotId = license;
+        selectFirstRallyForPilot(license);
+      }
+      $("#loginScreen").classList.add("is-hidden");
+      $("#appShell").classList.remove("is-hidden");
+      render();
+      toast(role === "admin" ? "Direccion de carrera activa" : "Carnet cargado");
+    }
+
+    async function loadRegistrationsFromSupabase(options = {}) {
+      if (!window.supabase) {
+        toast("No se pudo cargar la libreria de Supabase");
+        return;
+      }
+      try {
+        if (!options.silent) toast("Cargando inscripciones...");
+        const db = window.supabase.createClient(INSCRIPTIONS_SUPABASE_URL, INSCRIPTIONS_SUPABASE_ANON_KEY);
+        const { data, error } = await db
+          .from("rally_app_state")
+          .select("data")
+          .eq("id", 1)
+          .maybeSingle();
+        if (error) throw error;
+        const entries = data?.data?.entries;
+        if (!Array.isArray(entries) || !entries.length) {
+          toast("No hay inscripciones en rally_app_state.data.entries");
+          return;
+        }
+        const importedRallies = buildRalliesFromRegistrationEntries(entries);
+        if (!importedRallies.length) {
+          toast("No se encontraron inscritos con licencia, piloto y rally");
+          return;
+        }
+        rallies = importedRallies;
+        activeRallyId = rallies[0].id;
+        activePilotId = rallyPilots()[0]?.id || pilots[0]?.id;
+        await loadCarnetState({ silent: true });
+        fillBaseSelects();
+        fillControlSelect();
+        render();
+        if (!options.silent) toast(`Inscripciones cargadas: ${pilots.length} pilotos, ${rallies.length} rallies`);
+      } catch (error) {
+        toast(`Error Supabase: ${error.message}`);
+      }
+    }
+
+    document.querySelectorAll("[data-role]").forEach((button) => {
+      button.addEventListener("click", () => {
+        role = button.dataset.role;
+        document.querySelectorAll("[data-role]").forEach((item) => item.classList.toggle("active", item === button));
+      });
+    });
+    $("#loginForm").addEventListener("submit", (event) => { event.preventDefault(); login(); });
+    $("#loadSupabaseButton").addEventListener("click", loadRegistrationsFromSupabase);
+    $("#saveCarnetButton").addEventListener("click", saveCarnetState);
+    $("#loadCarnetButton").addEventListener("click", () => loadCarnetState());
+    $("#refreshSelectorsButton").addEventListener("click", () => {
+      fillBaseSelects();
+      fillControlSelect();
+      render();
+      toast("Listas actualizadas");
+    });
+    $("#logoutButton").addEventListener("click", () => {
+      $("#appShell").classList.add("is-hidden");
+      $("#loginScreen").classList.remove("is-hidden");
+    });
+    document.querySelectorAll(".view-tab").forEach((button) => {
+      button.addEventListener("click", () => {
+        activeView = button.dataset.view;
+        render();
+      });
+    });
+    $("#rallySelect").addEventListener("change", () => { activeRallyId = $("#rallySelect").value; render(); });
+    $("#pilotRallySelect").addEventListener("change", () => selectPilotRally($("#pilotRallySelect").value));
+    $("#adminRally").addEventListener("change", () => { activeRallyId = $("#adminRally").value; render(); });
+    $("#scheduleRally").addEventListener("change", () => { activeRallyId = $("#scheduleRally").value; render(); });
+    $("#adminPilotSearch").addEventListener("change", () => {
+      const match = findPilotFromSearch($("#adminPilotSearch").value);
+      if (!match) return toast("Piloto no encontrado");
+      activePilotId = match.id;
+      render();
+    });
+    $("#adminPilotSearch").addEventListener("input", () => {
+      clearTimeout(window.pilotSearchTimer);
+      window.pilotSearchTimer = setTimeout(() => {
+        const match = findPilotFromSearch($("#adminPilotSearch").value);
+        if (match && match.id !== activePilotId) {
+          activePilotId = match.id;
+          render();
+        }
+      }, 250);
+    });
+    $("#controlSelect").addEventListener("change", syncActualTime);
+    $("#savePublishButton").addEventListener("click", () => {
+      rally().publishAt = $("#publishInput").value;
+      render();
+      queueCarnetSave();
+      toast("Fecha de publicacion guardada");
+    });
+    $("#scheduleSavePublishButton").addEventListener("click", () => {
+      rally().publishAt = $("#schedulePublishInput").value;
+      render();
+      queueCarnetSave();
+      toast("Fecha de publicacion guardada");
+    });
+    $("#togglePublishButton").addEventListener("click", () => {
+      rally().publishAt = nowIsoMinute();
+      render();
+      queueCarnetSave();
+      toast("Horarios publicados");
+    });
+    $("#schedulePublishNowButton").addEventListener("click", () => {
+      rally().publishAt = nowIsoMinute();
+      render();
+      queueCarnetSave();
+      toast("Horarios publicados");
+    });
+    $("#quickRegisterButton").addEventListener("click", () => {
+      const next = nextControl();
+      if (!next) return toast("Carnet completo");
+      $("#controlSelect").value = next.id;
+      $("#actualTimeInput").value = nowTime();
+      $("#actualTimeInput").focus();
+    });
+    $("#addControlButton").addEventListener("click", addControl);
+    $("#renumberControlsButton").addEventListener("click", renumberControls);
+    $("#registerButton").addEventListener("click", () => {
+      const match = findPilotFromSearch($("#adminPilotSearch").value);
+      if (!match) return toast("Selecciona un piloto valido");
+      activePilotId = match.id;
+      const active = rally();
+      active.records[activePilotId] ||= {};
+      active.records[activePilotId][$("#controlSelect").value] = {
+        actual: $("#actualTimeInput").value || nowTime(),
+        marshal: $("#marshalInput").value || "Direccion Rally"
+      };
+      render();
+      queueCarnetSave();
+      toast("Control registrado");
+    });
+    $("#clearButton").addEventListener("click", () => {
+      const active = rally();
+      if (active.records[activePilotId]) delete active.records[activePilotId][$("#controlSelect").value];
+      render();
+      queueCarnetSave();
+      toast("Control borrado");
+    });
+
+    fillBaseSelects();
+    startCarnetRealtime();
+    render();
+  </script>
+</body>
+</html>
