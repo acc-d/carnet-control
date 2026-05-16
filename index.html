@@ -106,6 +106,27 @@
     .event-title p { margin: 0 0 5px; color: var(--red); font-weight: 850; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; }
     h1 { margin: 0; font-size: clamp(28px, 4vw, 48px); line-height: .98; text-transform: uppercase; }
     .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .official-clock {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: grid;
+      gap: 2px;
+      min-width: 152px;
+    }
+    .official-clock span {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 950;
+      text-transform: uppercase;
+      letter-spacing: .09em;
+    }
+    .official-clock strong {
+      font-size: 22px;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
     .view-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
     .view-tab {
       border: 1px solid var(--line);
@@ -238,6 +259,18 @@
     .controls-table input, .controls-table select { height: 36px; }
     .controls-table .ghost-button { min-height: 36px; width: 100%; }
     .notice { border-left: 4px solid var(--amber); padding: 12px; background: rgba(241,179,58,.1); color: #ffe0a6; font-size: 13px; line-height: 1.45; }
+    .time-zone-note {
+      margin-top: 10px;
+      border: 1px solid rgba(23, 78, 166, .42);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #cfe1ff;
+      background: rgba(23, 78, 166, .12);
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
     .toast { position: fixed; right: 18px; bottom: 18px; z-index: 30; background: #101720; border: 1px solid var(--line); color: var(--ink); box-shadow: var(--shadow); border-radius: 8px; padding: 12px 14px; max-width: min(360px, calc(100vw - 36px)); transform: translateY(18px); opacity: 0; pointer-events: none; transition: .2s ease; font-size: 13px; }
     .toast.show { transform: translateY(0); opacity: 1; }
     .control-alert {
@@ -350,6 +383,7 @@
       <section class="topbar" aria-label="Cabecera del evento">
         <div class="event-title"><p id="eventMeta">--</p><h1 id="eventTitle">--</h1></div>
         <div class="actions">
+          <div class="official-clock" aria-label="Hora oficial ACC"><span>Hora oficial ACC</span><strong id="officialClock">--:--:--</strong></div>
           <select class="admin-only" id="rallySelect" title="Cambiar rally activo"></select>
           <select class="pilot-only is-hidden" id="pilotRallySelect" title="Cambiar rally"></select>
           <button class="primary-button admin-only" type="button" id="quickRegisterButton">Registrar siguiente</button>
@@ -379,6 +413,7 @@
               <div class="metric"><span>Estado</span><strong id="metricStatus">--</strong></div>
               <div class="metric"><span>Horarios</span><strong id="metricPublish">--</strong></div>
             </section>
+            <div class="time-zone-note">Hora oficial ACC: España peninsular / Europe-Madrid</div>
             <div class="table-wrap">
               <table aria-label="Carnet de controles">
                 <thead><tr><th class="code">Control</th><th>Lugar</th><th class="time">Hora ideal</th><th class="time">Hora real</th><th class="signature">Firma</th></tr></thead>
@@ -770,13 +805,24 @@
     };
     const isPublished = () => role === "admin" || new Date() >= new Date(rally().publishAt);
     const nextControl = () => rally().controls.find((control) => !rally().records[activePilotId]?.[control.id]);
-    const secondsUntilTodayTime = (timeValue) => {
+    const madridNowParts = () => {
+      const parts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/Madrid",
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      }).formatToParts(new Date());
+      return Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, Number(part.value)]));
+    };
+    const secondsUntilOfficialTime = (timeValue) => {
       if (!timeValue) return null;
       const [hours, minutesValue] = timeValue.split(":").map(Number);
       if (!Number.isFinite(hours) || !Number.isFinite(minutesValue)) return null;
-      const target = new Date();
-      target.setHours(hours, minutesValue, 0, 0);
-      return Math.floor((target.getTime() - Date.now()) / 1000);
+      const now = madridNowParts();
+      const currentSeconds = now.hour * 3600 + now.minute * 60 + now.second;
+      const targetSeconds = hours * 3600 + minutesValue * 60;
+      return targetSeconds - currentSeconds;
     };
 
     function toast(message) {
@@ -819,14 +865,20 @@
       const control = nextControl();
       if (!active || !control || !isPublished()) return hideControlAlert();
       const ideal = active.schedule?.[activePilotId]?.[control.id];
-      const remaining = secondsUntilTodayTime(ideal);
+      const remaining = secondsUntilOfficialTime(ideal);
       const alertKey = `${active.id}:${activePilotId}:${control.id}:${ideal}`;
       if (remaining === null || remaining < 0 || remaining > 60 || dismissedControlAlertKey === alertKey) return hideControlAlert();
       $("#controlAlertTitle").textContent = `${control.code} - ${control.place}`;
-      $("#controlAlertText").textContent = `Hora ideal ${ideal}. Dirígete al próximo control.`;
+      $("#controlAlertText").textContent = `Hora ideal ACC ${ideal} (Europe/Madrid). Dirígete al próximo control.`;
       $("#controlCountdown").textContent = String(Math.max(0, remaining)).padStart(2, "0");
       $("#controlAlert").classList.remove("is-hidden");
       beepCountdown(remaining);
+    }
+
+    function updateOfficialClock() {
+      const parts = madridNowParts();
+      if (!parts.hour && parts.hour !== 0) return;
+      $("#officialClock").textContent = [parts.hour, parts.minute, parts.second].map((value) => String(value).padStart(2, "0")).join(":");
     }
 
     function fillBaseSelects() {
@@ -1278,6 +1330,8 @@
     fillBaseSelects();
     startCarnetRealtime();
     setInterval(checkUpcomingControlAlert, 1000);
+    updateOfficialClock();
+    setInterval(updateOfficialClock, 1000);
     render();
   </script>
 </body>
