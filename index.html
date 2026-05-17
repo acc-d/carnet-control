@@ -439,6 +439,7 @@
             <div class="form-grid">
               <label>Rally<select id="adminRally"></select></label>
               <label>Mostrar horarios desde<input id="publishInput" type="datetime-local"></label>
+              <label>Carnet de control<select id="cardEnabledSelect"><option value="true">Activo para pilotos</option><option value="false">Oculto para pilotos</option></select></label>
             </div>
             <div class="control-actions">
               <button class="ghost-button" type="button" id="savePublishButton">Guardar publicacion</button>
@@ -571,6 +572,7 @@
         name: "Rally Sierra Norte",
         meta: "Temporada 2026 - Fecha 03",
         publishAt: "2026-05-15T19:30",
+        cardEnabled: true,
         controls: [
           { id: "ch0", code: "CH 0", place: "Salida parque", note: "Parque cerrado", type: "CH" },
           { id: "tc1", code: "TC 1", place: "Puerto del Pinar", note: "Salida tramo 1", type: "TC" },
@@ -595,6 +597,7 @@
         name: "Rally Costa Verde",
         meta: "Temporada 2026 - Fecha 04",
         publishAt: "2026-05-18T20:00",
+        cardEnabled: true,
         controls: [
           { id: "ch0", code: "CH 0", place: "Salida ceremonial", note: "Parque cerrado", type: "CH" },
           { id: "tc1", code: "TC 1", place: "Acantilado", note: "Salida tramo 1", type: "TC" },
@@ -642,6 +645,7 @@
           name: rallyName,
           meta: championship,
           publishAt: nowIsoMinute(),
+          cardEnabled: true,
           controls: defaultControls.map((control) => ({ ...control })),
           pilotIds: group.map((entry) => entry.licenciaPiloto),
           pilotData,
@@ -661,6 +665,7 @@
           name: active.name,
           meta: active.meta,
           publishAt: active.publishAt,
+          cardEnabled: active.cardEnabled !== false,
           controls: active.controls,
           pilotIds: active.pilotIds || [],
           schedule: active.schedule || {},
@@ -681,6 +686,7 @@
         return {
           ...active,
           publishAt: saved.publishAt || active.publishAt,
+          cardEnabled: saved.cardEnabled !== false,
           controls: Array.isArray(saved.controls) && saved.controls.length ? saved.controls : active.controls,
           schedule: cleanSchedule,
           records: cleanRecords
@@ -787,7 +793,10 @@
     const rally = () => rallies.find((item) => item.id === activeRallyId);
     const pilot = () => pilots.find((item) => item.id === activePilotId);
     const rallyPilot = (id = activePilotId) => rally()?.pilotData?.[id] || pilots.find((item) => item.id === id);
-    const ralliesForPilot = (license = activePilotId) => rallies.filter((item) => item.pilotIds?.includes(license) || item.schedule?.[license] || item.records?.[license]);
+    const ralliesForPilot = (license = activePilotId, options = {}) => rallies.filter((item) => {
+      const hasPilot = item.pilotIds?.includes(license) || item.schedule?.[license] || item.records?.[license];
+      return hasPilot && (options.includeDisabled || item.cardEnabled !== false);
+    });
     const rallyPilots = () => {
       const ids = rally()?.pilotIds;
       return ids?.length ? ids.map((id) => rallyPilot(id)).filter(Boolean) : pilots;
@@ -971,6 +980,16 @@
 
     function render() {
       const active = rally();
+      if (role === "pilot" && active?.cardEnabled === false) {
+        const available = ralliesForPilot(activePilotId);
+        if (available.length) activeRallyId = available[0].id;
+        else {
+          $("#loginScreen").classList.remove("is-hidden");
+          $("#appShell").classList.add("is-hidden");
+          toast("No tienes ningún carnet activo");
+          return;
+        }
+      }
       const allowedPilots = rallyPilots();
       if (!allowedPilots.length) {
         if (role === "pilot") {
@@ -1009,6 +1028,7 @@
       $("#statNext").textContent = next ? next.code : "Fin";
       $("#rolePill").textContent = role === "admin" ? "Admin" : "Piloto";
       $("#publishInput").value = active.publishAt;
+      $("#cardEnabledSelect").value = String(active.cardEnabled !== false);
       $("#rallySelect").value = active.id;
       fillPilotRallySelect();
       $("#adminRally").value = active.id;
@@ -1171,7 +1191,7 @@
       } else {
         const license = licenseFromUser(data.user, profile);
         if (!license) return toast("No encuentro tu licencia de piloto vinculada a esta cuenta");
-        if (!ralliesForPilot(license).length) return toast("No estás inscrito en ninguna prueba");
+        if (!ralliesForPilot(license).length) return toast("No tienes ningún carnet activo");
         activePilotId = license;
         selectFirstRallyForPilot(license);
       }
@@ -1276,6 +1296,12 @@
       render();
       queueCarnetSave();
       toast("Fecha de publicacion guardada");
+    });
+    $("#cardEnabledSelect").addEventListener("change", () => {
+      rally().cardEnabled = $("#cardEnabledSelect").value === "true";
+      render();
+      queueCarnetSave();
+      toast(rally().cardEnabled ? "Carnet visible para pilotos" : "Carnet oculto para pilotos");
     });
     $("#togglePublishButton").addEventListener("click", () => {
       rally().publishAt = nowIsoMinute();
