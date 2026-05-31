@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
@@ -171,7 +171,7 @@
     .ghost-button { background: transparent; }
     .dashboard { display: grid; grid-template-columns: minmax(0, 1fr) minmax(380px, .9fr); gap: 20px; align-items: start; min-width: 0; }
     .schedule-page { display: grid; gap: 16px; }
-    .schedule-toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto auto; gap: 10px; align-items: end; }
+    .schedule-toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto auto auto; gap: 10px; align-items: end; }
     .schedule-toolbar .notice { grid-column: 1 / -1; padding: 8px 10px; }
     .schedule-toolbar button { min-width: 132px; }
 
@@ -372,10 +372,10 @@
       </div>
       <form class="login-card" id="loginForm">
         <h2>Entrar</h2>
-        <p>Accede con la misma cuenta que tienes en la página web de ACC.</p>
+        <p>Accede con la misma cuenta que tienes en la p&aacute;gina web de ACC.</p>
         <label>Email<input id="loginEmail" type="email" autocomplete="email" placeholder="tu@email.com" required></label>
-        <label>Contraseña<input id="loginPassword" type="password" autocomplete="current-password" required></label>
-        <button class="primary-button" type="submit">Iniciar sesion</button>
+        <label>Contrase&ntilde;a<input id="loginPassword" type="password" autocomplete="current-password" required></label>
+        <button class="primary-button" type="submit">Iniciar sesi&oacute;n</button>
       </form>
     </div>
   </section>
@@ -421,14 +421,14 @@
             <section class="driver-strip">
               <div class="field"><span>Piloto</span><strong id="cardDriver">--</strong></div>
               <div class="field"><span>Equipo</span><strong id="cardTeam">--</strong></div>
-              <div class="field"><span>Coche / Categoria</span><strong id="cardCar">--</strong></div>
+              <div class="field"><span>Coche / Categor&iacute;a</span><strong id="cardCar">--</strong></div>
             </section>
             <section class="stage-band">
               <div class="metric"><span>Controles</span><strong id="metricChecks">--</strong></div>
               <div class="metric"><span>Estado</span><strong id="metricStatus">--</strong></div>
               <div class="metric"><span>Horarios</span><strong id="metricPublish">--</strong></div>
             </section>
-            <div class="time-zone-note">Hora oficial ACC: España peninsular / Europe-Madrid</div>
+            <div class="time-zone-note">Hora oficial ACC: Espa&ntilde;a peninsular / Europe/Madrid</div>
             <div class="table-wrap">
               <table aria-label="Carnet de controles">
                 <thead><tr><th class="code">Control</th><th>Lugar</th><th class="time">Hora ideal</th><th class="time">Hora real</th><th class="signature">Firma</th></tr></thead>
@@ -464,7 +464,7 @@
 
           <section class="panel admin-only">
             <div class="panel-title"><h2>Inscritos</h2><span class="pill">Supabase</span></div>
-            <div class="notice">Importa pilotos desde tu gestor de inscripciones. Se usa licencia, dorsal, piloto, equipo, coche y categoria.</div>
+            <div class="notice">Importa pilotos desde tu gestor de inscripciones. Se usa licencia, dorsal, piloto, equipo, coche y categor&iacute;a.</div>
             <div class="control-actions">
               <button class="primary-button" type="button" id="loadSupabaseButton">Cargar inscritos</button>
               <button class="ghost-button" type="button" id="refreshSelectorsButton">Actualizar listas</button>
@@ -495,9 +495,15 @@
           <div class="notice">Modifica aqui los controles de este rally: codigo, lugar y descripcion. La matriz de horarios se actualiza con esas columnas.</div>
           <div class="schedule-wrap" style="min-height:0;max-height:320px"><table class="controls-table" id="controlsTable"></table></div>
           <div class="control-actions">
-            <button class="primary-button" type="button" id="addControlButton">Añadir control</button>
+            <button class="primary-button" type="button" id="addControlButton">A&ntilde;adir control</button>
             <button class="ghost-button" type="button" id="renumberControlsButton">Renumerar CH/TC</button>
           </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><h2>Fechas por sesi&oacute;n</h2><span class="pill">Avisos</span></div>
+          <div class="notice">Configura qu&eacute; d&iacute;a corre cada sesi&oacute;n. Los avisos emergentes solo saltan el d&iacute;a asignado a la sesi&oacute;n del piloto.</div>
+          <div class="schedule-wrap" style="min-height:0;max-height:260px"><table class="controls-table" id="sessionDatesTable"></table></div>
         </section>
 
         <section class="panel">
@@ -506,6 +512,7 @@
             <label>Rally<select id="scheduleRally"></select></label>
             <label>Mostrar horarios desde<input id="schedulePublishInput" type="datetime-local"></label>
             <div class="notice">Edita los horarios directamente. Filas = pilotos inscritos, columnas = controles del rally.</div>
+            <button class="ghost-button" type="button" id="sortScheduleByTimeButton">Ordenar por hora</button>
             <button class="ghost-button" type="button" id="scheduleSavePublishButton">Guardar publicacion</button>
             <button class="primary-button" type="button" id="schedulePublishNowButton">Publicar ahora</button>
           </div>
@@ -517,7 +524,7 @@
 
   <div class="control-alert is-hidden" id="controlAlert" role="dialog" aria-modal="true" aria-labelledby="controlAlertTitle">
     <div class="control-alert-card">
-      <span>Próximo control</span>
+      <span>Pr&oacute;ximo control</span>
       <h2 id="controlAlertTitle">Control horario</h2>
       <p id="controlAlertText">Queda menos de un minuto para llegar al control.</p>
       <div class="countdown" id="controlCountdown">60</div>
@@ -536,9 +543,9 @@
     const AUTH_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmamR3Zndma2hlZndycG1pZ2V2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3OTY1MDgsImV4cCI6MjA5MzM3MjUwOH0.pqnFfi5Q3VTc6QTcwiOum5kJigg8nGkqDVDj72zUHd0";
     const ADMIN_EMAILS = [];
     const demoInscripciones = [
-      { licenciaPiloto: "PIL26_0084", dorsal: "27", piloto: "Javier Garcia", equipo: "Apex Gravel Team", coche: "Hyundai i20 N", categoria: "Rally2" },
-      { licenciaPiloto: "PIL26_0154", dorsal: "14", piloto: "Nerea Lopez", equipo: "North Pace Motorsport", coche: "Ford Fiesta", categoria: "Rally3" },
-      { licenciaPiloto: "PIL26_0170", dorsal: "33", piloto: "Alex Martin", equipo: "Virtual Stage Club", coche: "Skoda Fabia RS", categoria: "Rally2" }
+      { licenciaPiloto: "PIL26_0084", dorsal: "27", piloto: "Javier Garcia", equipo: "Apex Gravel Team", coche: "Hyundai i20 N", categoria: "Rally2", sesion: "A" },
+      { licenciaPiloto: "PIL26_0154", dorsal: "14", piloto: "Nerea Lopez", equipo: "North Pace Motorsport", coche: "Ford Fiesta", categoria: "Rally3", sesion: "B" },
+      { licenciaPiloto: "PIL26_0170", dorsal: "33", piloto: "Alex Martin", equipo: "Virtual Stage Club", coche: "Skoda Fabia RS", categoria: "Rally2", sesion: "A" }
     ];
 
     function pilotsFromRegistrationEntries(entries) {
@@ -551,7 +558,8 @@
         number: entry.dorsal || String(index + 1).padStart(2, "0"),
         team: entry.equipo || "Sin equipo",
         car: entry.coche || "Sin coche",
-        category: entry.categoria || "Sin categoria"
+        category: entry.categoria || "Sin categoria",
+        session: entry.sesion || "Sin sesion"
       }));
     }
 
@@ -571,7 +579,8 @@
       piloto: getEntryField(entry, ["piloto", "Piloto"]),
       equipo: getEntryField(entry, ["equipo", "Equipo"]),
       coche: getEntryField(entry, ["coche", "Coche"]),
-      categoria: getEntryField(entry, ["categoria", "Categoria", "categoría", "Categoría"])
+      sesion: getEntryField(entry, ["sesion", "Sesion", "sesi\u00f3n", "Sesi\u00f3n"]),
+      categoria: getEntryField(entry, ["categoria", "Categoria", "categor\u00eda", "Categor\u00eda"])
     });
 
     const defaultControls = [
@@ -588,6 +597,7 @@
         meta: "Temporada 2026 - Fecha 03",
         publishAt: "2026-05-15T19:30",
         cardEnabled: true,
+        sessionDates: { A: "", B: "" },
         controls: [
           { id: "ch0", code: "CH 0", place: "Salida parque", note: "Parque cerrado", type: "CH" },
           { id: "tc1", code: "TC 1", place: "Puerto del Pinar", note: "Salida tramo 1", type: "TC" },
@@ -613,6 +623,7 @@
         meta: "Temporada 2026 - Fecha 04",
         publishAt: "2026-05-18T20:00",
         cardEnabled: true,
+        sessionDates: { A: "", B: "" },
         controls: [
           { id: "ch0", code: "CH 0", place: "Salida ceremonial", note: "Parque cerrado", type: "CH" },
           { id: "tc1", code: "TC 1", place: "Acantilado", note: "Salida tramo 1", type: "TC" },
@@ -655,12 +666,14 @@
         const schedule = Object.fromEntries(group.map((entry) => [entry.licenciaPiloto, {}]));
         const records = Object.fromEntries(group.map((entry) => [entry.licenciaPiloto, {}]));
         const pilotData = Object.fromEntries(pilotsFromRegistrationEntries(group).map((p) => [p.id, p]));
+        const sessionDates = Object.fromEntries([...new Set(group.map((entry) => entry.sesion || "Sin sesion"))].sort().map((session) => [session, ""]));
         return {
           id: slug(`${championship}-${rallyName}`),
           name: rallyName,
           meta: championship,
           publishAt: nowIsoMinute(),
           cardEnabled: true,
+          sessionDates,
           controls: defaultControls.map((control) => ({ ...control })),
           pilotIds: group.map((entry) => entry.licenciaPiloto),
           pilotData,
@@ -681,6 +694,7 @@
           meta: active.meta,
           publishAt: active.publishAt,
           cardEnabled: active.cardEnabled !== false,
+          sessionDates: active.sessionDates || {},
           controls: active.controls,
           pilotIds: active.pilotIds || [],
           schedule: active.schedule || {},
@@ -702,6 +716,7 @@
           ...active,
           publishAt: saved.publishAt || active.publishAt,
           cardEnabled: saved.cardEnabled !== false,
+          sessionDates: { ...(active.sessionDates || {}), ...(saved.sessionDates || {}) },
           controls: Array.isArray(saved.controls) && saved.controls.length ? saved.controls : active.controls,
           schedule: cleanSchedule,
           records: cleanRecords
@@ -788,6 +803,7 @@
     let activeRallyId = rallies[0].id;
     let activePilotId = pilots[0].id;
     let activeView = "card";
+    let scheduleSortMode = "dorsal";
     let dismissedControlAlertKey = "";
     let tcFinalSoundEnabled = localStorage.getItem("accTcFinalSoundEnabled") !== "false";
     let audioContext = null;
@@ -830,6 +846,20 @@
     };
     const isPublished = () => role === "admin" || new Date() >= new Date(rally().publishAt);
     const nextControl = () => rally().controls.find((control) => !rally().records[activePilotId]?.[control.id]);
+    const upcomingAlertControl = () => {
+      const active = rally();
+      const schedule = active?.schedule?.[activePilotId] || {};
+      const records = active?.records?.[activePilotId] || {};
+      return (active?.controls || [])
+        .map((control) => ({
+          control,
+          ideal: schedule[control.id],
+          remaining: secondsUntilOfficialTime(schedule[control.id]),
+          recorded: Boolean(records[control.id])
+        }))
+        .filter((item) => !item.recorded && item.ideal && item.remaining !== null && item.remaining >= 0 && item.remaining <= 60)
+        .sort((a, b) => a.remaining - b.remaining)[0] || null;
+    };
     const madridNowParts = () => {
       const parts = new Intl.DateTimeFormat("en-GB", {
         timeZone: "Europe/Madrid",
@@ -839,6 +869,23 @@
         second: "2-digit"
       }).formatToParts(new Date());
       return Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, Number(part.value)]));
+    };
+    const madridToday = () => {
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Europe/Madrid",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }).formatToParts(new Date());
+      const map = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+      return `${map.year}-${map.month}-${map.day}`;
+    };
+    const isPilotSessionDay = () => {
+      const active = rally();
+      const p = rallyPilot();
+      const session = p?.session || "Sin sesion";
+      const configuredDate = active?.sessionDates?.[session];
+      return Boolean(configuredDate && configuredDate === madridToday());
     };
     const secondsUntilOfficialTime = (timeValue) => {
       if (!timeValue) return null;
@@ -888,14 +935,16 @@
     function checkUpcomingControlAlert() {
       if (role !== "pilot" || $("#appShell").classList.contains("is-hidden")) return hideControlAlert();
       const active = rally();
-      const control = nextControl();
+      const upcoming = upcomingAlertControl();
+      const control = upcoming?.control;
       if (!active || !control || !isPublished()) return hideControlAlert();
-      const ideal = active.schedule?.[activePilotId]?.[control.id];
-      const remaining = secondsUntilOfficialTime(ideal);
+      if (!isPilotSessionDay()) return hideControlAlert();
+      const ideal = upcoming.ideal;
+      const remaining = upcoming.remaining;
       const alertKey = `${active.id}:${activePilotId}:${control.id}:${ideal}`;
       if (remaining === null || remaining < 0 || remaining > 60 || dismissedControlAlertKey === alertKey) return hideControlAlert();
       $("#controlAlertTitle").textContent = `${control.code} - ${control.place}`;
-      $("#controlAlertText").textContent = `Hora ideal ACC ${ideal} (Europe/Madrid). Dirígete al próximo control.`;
+      $("#controlAlertText").textContent = `Hora ideal ACC ${ideal} (Europe/Madrid). Dir\u00edgete al pr\u00f3ximo control.`;
       $("#controlCountdown").textContent = String(Math.max(0, remaining)).padStart(2, "0");
       $("#controlAlert").classList.remove("is-hidden");
       beepCountdown(remaining, control.type);
@@ -977,10 +1026,54 @@
       });
     }
 
+    function renderSessionDatesEditor() {
+      const active = rally();
+      const sessions = [...new Set(rallyPilots().map((p) => p.session || "Sin sesion"))].sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
+      active.sessionDates ||= {};
+      sessions.forEach((session) => {
+        if (!(session in active.sessionDates)) active.sessionDates[session] = "";
+      });
+      $("#sessionDatesTable").innerHTML = `
+        <thead><tr><th>Sesi&oacute;n</th><th>Fecha de prueba</th><th>Pilotos</th></tr></thead>
+        <tbody>
+          ${sessions.map((session) => {
+            const count = rallyPilots().filter((p) => (p.session || "Sin sesion") === session).length;
+            return `<tr>
+              <td><strong>${esc(session)}</strong></td>
+              <td><input type="date" value="${esc(active.sessionDates[session] || "")}" data-session-date="${esc(session)}" aria-label="Fecha sesion ${esc(session)}"></td>
+              <td>${count}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>`;
+      $("#sessionDatesTable").querySelectorAll("[data-session-date]").forEach((input) => {
+        input.addEventListener("change", () => {
+          active.sessionDates[input.dataset.sessionDate] = input.value;
+          render();
+          queueCarnetSave();
+          toast("Fecha de sesi\u00f3n guardada");
+        });
+      });
+    }
+
     function renderScheduleGrid() {
       const active = rally();
       const head = `<thead><tr><th>Piloto</th>${active.controls.map((control) => `<th>${esc(control.code)}</th>`).join("")}</tr></thead>`;
-      const body = rallyPilots().map((p) => {
+      const firstIdealMinutes = (p) => {
+        const times = active.controls
+          .map((control) => active.schedule[p.id]?.[control.id])
+          .filter(Boolean)
+          .map(minutes)
+          .filter((value) => value !== null);
+        return times.length ? Math.min(...times) : Number.POSITIVE_INFINITY;
+      };
+      const orderedPilots = [...rallyPilots()].sort((a, b) => {
+        if (scheduleSortMode === "time") {
+          const byTime = firstIdealMinutes(a) - firstIdealMinutes(b);
+          if (byTime !== 0) return byTime;
+        }
+        return String(a.number || "").localeCompare(String(b.number || ""), "es", { numeric: true, sensitivity: "base" });
+      });
+      const body = orderedPilots.map((p) => {
         const cells = active.controls.map((control) => {
           const value = active.schedule[p.id]?.[control.id] || "";
           return `<td><input type="time" value="${esc(value)}" data-pilot="${p.id}" data-control="${control.id}" aria-label="${esc(p.name)} ${esc(control.code)}"></td>`;
@@ -1008,7 +1101,7 @@
         else {
           $("#loginScreen").classList.remove("is-hidden");
           $("#appShell").classList.add("is-hidden");
-          toast("No tienes ningún carnet activo");
+          toast("No tienes ning\u00fan carnet activo");
           return;
         }
       }
@@ -1017,7 +1110,7 @@
         if (role === "pilot") {
           $("#loginScreen").classList.remove("is-hidden");
           $("#appShell").classList.add("is-hidden");
-          toast("No estás inscrito en ninguna prueba");
+          toast("No est\u00e1s inscrito en ninguna prueba");
         }
         return;
       }
@@ -1045,7 +1138,7 @@
       $("#driverSign").textContent = p.short;
       $("#pilotAvatar").textContent = p.number;
       $("#pilotName").textContent = p.name;
-      $("#pilotCar").textContent = `${p.car} - Categoria ${p.category}`;
+      $("#pilotCar").textContent = `${p.car} - Categor\u00eda ${p.category}`;
       $("#statChecks").textContent = String(completed).padStart(2, "0");
       $("#statNext").textContent = next ? next.code : "Fin";
       $("#rolePill").textContent = role === "admin" ? "Admin" : "Piloto";
@@ -1086,6 +1179,7 @@
       checkUpcomingControlAlert();
       if (role === "admin") {
         renderControlsEditor();
+        renderSessionDatesEditor();
         renderScheduleGrid();
       }
     }
@@ -1165,7 +1259,7 @@
       });
       render();
       queueCarnetSave();
-      toast("Control añadido");
+      toast("Control a\u00f1adido");
     }
 
     function deleteControl(controlId) {
@@ -1195,7 +1289,7 @@
       if (!window.supabase) return toast("No se pudo cargar Supabase Auth");
       const email = $("#loginEmail").value.trim();
       const password = $("#loginPassword").value;
-      if (!email || !password) return toast("Introduce email y contraseña");
+      if (!email || !password) return toast("Introduce email y contrase\u00f1a");
       const db = window.supabase.createClient(AUTH_SUPABASE_URL, AUTH_SUPABASE_ANON_KEY);
       const { data, error } = await db.auth.signInWithPassword({ email, password });
       if (error) return toast(`Login: ${error.message}`);
@@ -1214,7 +1308,7 @@
       } else {
         const license = licenseFromUser(data.user, profile);
         if (!license) return toast("No encuentro tu licencia de piloto vinculada a esta cuenta");
-        if (!ralliesForPilot(license).length) return toast("No tienes ningún carnet activo");
+        if (!ralliesForPilot(license).length) return toast("No tienes ning\u00fan carnet activo");
         activePilotId = license;
         selectFirstRallyForPilot(license);
       }
@@ -1291,6 +1385,11 @@
     $("#pilotRallySelect").addEventListener("change", () => selectPilotRally($("#pilotRallySelect").value));
     $("#adminRally").addEventListener("change", () => { activeRallyId = $("#adminRally").value; render(); });
     $("#scheduleRally").addEventListener("change", () => { activeRallyId = $("#scheduleRally").value; render(); });
+    $("#sortScheduleByTimeButton").addEventListener("click", () => {
+      scheduleSortMode = "time";
+      renderScheduleGrid();
+      toast("Horarios ordenados de mas pronto a mas tarde");
+    });
     $("#adminPilotSearch").addEventListener("change", () => {
       const match = findPilotFromSearch($("#adminPilotSearch").value);
       if (!match) return toast("Piloto no encontrado");
@@ -1370,8 +1469,9 @@
     });
     $("#dismissControlAlert").addEventListener("click", () => {
       const active = rally();
-      const control = nextControl();
-      const ideal = control ? active.schedule?.[activePilotId]?.[control.id] : "";
+      const upcoming = upcomingAlertControl();
+      const control = upcoming?.control;
+      const ideal = upcoming?.ideal || "";
       dismissedControlAlertKey = control ? `${active.id}:${activePilotId}:${control.id}:${ideal}` : "";
       hideControlAlert();
     });
