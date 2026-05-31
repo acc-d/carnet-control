@@ -809,13 +809,27 @@
     let audioContext = null;
     let lastBeepSecond = null;
     const $ = (selector) => document.querySelector(selector);
-    const nowIsoMinute = () => {
-      const d = new Date();
-      d.setSeconds(0, 0);
-      const pad = (n) => String(n).padStart(2, "0");
-      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const madridDateTimeParts = () => {
+      const parts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/Madrid",
+        hour12: false,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      }).formatToParts(new Date());
+      return Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
     };
-    const nowTime = () => new Date().toTimeString().slice(0, 5);
+    const nowIsoMinute = () => {
+      const parts = madridDateTimeParts();
+      return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+    };
+    const nowTime = () => {
+      const parts = madridDateTimeParts();
+      return `${parts.hour}:${parts.minute}`;
+    };
     const minutes = (value) => {
       if (!value) return null;
       const [h, m] = value.split(":").map(Number);
@@ -844,7 +858,7 @@
       const matches = searchPool.filter((p) => [p.id, p.name, p.number, p.team, p.car, p.category].some((field) => String(field).toLowerCase().includes(text)));
       return matches.length === 1 ? matches[0] : null;
     };
-    const isPublished = () => role === "admin" || new Date() >= new Date(rally().publishAt);
+    const isPublished = () => role === "admin" || !rally().publishAt || nowIsoMinute() >= rally().publishAt;
     const nextControl = () => rally().controls.find((control) => !rally().records[activePilotId]?.[control.id]);
     const upcomingAlertControl = () => {
       const active = rally();
@@ -861,24 +875,16 @@
         .sort((a, b) => a.remaining - b.remaining)[0] || null;
     };
     const madridNowParts = () => {
-      const parts = new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Europe/Madrid",
-        hour12: false,
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
-      }).formatToParts(new Date());
-      return Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, Number(part.value)]));
+      const parts = madridDateTimeParts();
+      return {
+        hour: Number(parts.hour),
+        minute: Number(parts.minute),
+        second: Number(parts.second)
+      };
     };
     const madridToday = () => {
-      const parts = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Europe/Madrid",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit"
-      }).formatToParts(new Date());
-      const map = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
-      return `${map.year}-${map.month}-${map.day}`;
+      const parts = madridDateTimeParts();
+      return `${parts.year}-${parts.month}-${parts.day}`;
     };
     const isPilotSessionDay = () => {
       const active = rally();
@@ -903,6 +909,12 @@
       node.classList.add("show");
       clearTimeout(window.toastTimer);
       window.toastTimer = setTimeout(() => node.classList.remove("show"), 2200);
+    }
+
+    function formatOfficialDateTime(value) {
+      if (!value) return "--";
+      const [date, time] = value.split("T");
+      return `${date || "--"} ${time || ""}`.trim();
     }
 
     function hideControlAlert() {
@@ -1125,7 +1137,7 @@
       $("#eventMeta").textContent = active.meta;
       $("#eventTitle").textContent = active.name;
       $("#sideRally").textContent = active.name;
-      $("#sidePublish").textContent = new Date(active.publishAt).toLocaleString();
+      $("#sidePublish").textContent = formatOfficialDateTime(active.publishAt);
       $("#nextControlSide").textContent = next ? `${next.code} - ${published ? schedule[next.id] || "--:--" : "oculto"}` : "Carnet completo";
       $("#cardNumber").textContent = p.number;
       $("#cardDriver").textContent = p.name;
