@@ -1094,7 +1094,7 @@
       }).join("");
       $("#scheduleTable").innerHTML = head + `<tbody>${body}</tbody>`;
       $("#scheduleTable").querySelectorAll("input").forEach((input) => {
-        input.addEventListener("change", () => {
+        input.addEventListener("blur", () => {
           const active = rally();
           active.schedule[input.dataset.pilot] ||= {};
           active.schedule[input.dataset.pilot][input.dataset.control] = input.value;
