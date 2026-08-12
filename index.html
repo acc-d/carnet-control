@@ -493,6 +493,10 @@
         <section class="panel">
           <div class="panel-title"><h2>Controles del rally</h2><span class="pill">Itinerario</span></div>
           <div class="notice">Modifica aqui los controles de este rally: codigo, lugar y descripcion. La matriz de horarios se actualiza con esas columnas.</div>
+          <div class="schedule-toolbar">
+            <label>Importar Excel<input id="excelImportInput" type="file" accept=".xlsx,.xls"></label>
+            <div class="notice">Lee hojas por sesi&oacute;n y columnas tipo TC1: CH / SALIDA. Se asigna por dorsal y, si coincide, por sesi&oacute;n.</div>
+          </div>
           <div class="schedule-wrap" style="min-height:0;max-height:320px"><table class="controls-table" id="controlsTable"></table></div>
           <div class="control-actions">
             <button class="primary-button" type="button" id="addControlButton">A&ntilde;adir control</button>
@@ -534,6 +538,7 @@
   <div class="toast" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
     const INSCRIPTIONS_SUPABASE_URL = "https://xlxvuhfwabrikxmmawba.supabase.co";
     const INSCRIPTIONS_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhseHZ1aGZ3YWJyaWt4bW1hd2JhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDMxMjcsImV4cCI6MjA5MjcxOTEyN30.gRodacVpS0U5qLsXtAF6-4vP97RbluCpH_Iy2Y-toxY";
@@ -735,7 +740,7 @@
     }
 
     function queueCarnetSave() {
-      if (role !== "admin") return;
+      if (!canAdmin()) return;
       clearTimeout(autosaveTimer);
       autosaveTimer = setTimeout(() => saveCarnetState({ silent: true }), 700);
     }
@@ -809,6 +814,8 @@
     let audioContext = null;
     let lastBeepSecond = null;
     const $ = (selector) => document.querySelector(selector);
+    const canAdmin = () => role === "admin" || role === "office";
+    const isPilotLike = () => role === "pilot" || role === "office";
     const madridDateTimeParts = () => {
       const parts = new Intl.DateTimeFormat("en-GB", {
         timeZone: "Europe/Madrid",
@@ -836,6 +843,7 @@
       return h * 60 + m;
     };
     const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]);
+    const normalizeText = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
     const rally = () => rallies.find((item) => item.id === activeRallyId);
     const pilot = () => pilots.find((item) => item.id === activePilotId);
     const rallyPilot = (id = activePilotId) => rally()?.pilotData?.[id] || pilots.find((item) => item.id === id);
@@ -858,7 +866,7 @@
       const matches = searchPool.filter((p) => [p.id, p.name, p.number, p.team, p.car, p.category].some((field) => String(field).toLowerCase().includes(text)));
       return matches.length === 1 ? matches[0] : null;
     };
-    const isPublished = () => role === "admin" || !rally().publishAt || nowIsoMinute() >= rally().publishAt;
+    const isPublished = () => canAdmin() || !rally().publishAt || nowIsoMinute() >= rally().publishAt;
     const nextControl = () => rally().controls.find((control) => !rally().records[activePilotId]?.[control.id]);
     const upcomingAlertControl = () => {
       const active = rally();
@@ -945,7 +953,7 @@
     }
 
     function checkUpcomingControlAlert() {
-      if (role !== "pilot" || $("#appShell").classList.contains("is-hidden")) return hideControlAlert();
+      if (!isPilotLike() || $("#appShell").classList.contains("is-hidden")) return hideControlAlert();
       const active = rally();
       const upcoming = upcomingAlertControl();
       const control = upcoming?.control;
@@ -985,7 +993,7 @@
     }
 
     function fillPilotRallySelect() {
-      const available = role === "pilot" ? ralliesForPilot(activePilotId) : rallies;
+      const available = isPilotLike() && !canAdmin() ? ralliesForPilot(activePilotId) : rallies;
       $("#pilotRallySelect").innerHTML = available.map((r) => `<option value="${r.id}">${esc(r.name)}</option>`).join("");
       $("#pilotRallySelect").value = activeRallyId;
     }
@@ -1105,9 +1113,158 @@
       });
     }
 
+    function excelCell(sheet, row, col) {
+      return sheet[window.XLSX.utils.encode_cell({ r: row, c: col })] || null;
+    }
+
+    function excelCellText(sheet, row, col) {
+      const cell = excelCell(sheet, row, col);
+      if (!cell) return "";
+      return String(cell.w ?? cell.v ?? "").trim();
+    }
+
+    function excelTimeToValue(cell) {
+      if (!cell) return "";
+      if (typeof cell.v === "number" && cell.v >= 0 && cell.v < 2) {
+        let totalMinutes = Math.round((cell.v % 1) * 24 * 60);
+        totalMinutes %= 24 * 60;
+        const h = Math.floor(totalMinutes / 60);
+        const m = totalMinutes % 60;
+        return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+      }
+      const text = String(cell.w ?? cell.v ?? "").trim();
+      const match = text.match(/\b(\d{1,2}):(\d{2})(?::\d{2})?\b/);
+      if (!match) return "";
+      return `${String(Number(match[1])).padStart(2, "0")}:${match[2]}`;
+    }
+
+    function findExcelHeader(sheet) {
+      const range = window.XLSX.utils.decode_range(sheet["!ref"] || "A1:A1");
+      for (let row = range.s.r; row <= Math.min(range.e.r, range.s.r + 12); row += 1) {
+        const values = [];
+        for (let col = range.s.c; col <= range.e.c; col += 1) values.push(normalizeText(excelCellText(sheet, row, col)));
+        if (values.includes("dorsal") && values.includes("piloto")) return { row, range };
+      }
+      return null;
+    }
+
+    function readExcelControlColumns(sheet, headerInfo) {
+      const headerRow = headerInfo.row;
+      const groupRow = Math.max(headerInfo.range.s.r, headerRow - 1);
+      let group = "";
+      const columns = [];
+      for (let col = headerInfo.range.s.c; col <= headerInfo.range.e.c; col += 1) {
+        const currentGroup = excelCellText(sheet, groupRow, col);
+        if (currentGroup) group = currentGroup;
+        const groupKey = normalizeText(group).replace(/\s+/g, "");
+        const label = excelCellText(sheet, headerRow, col);
+        const labelKey = normalizeText(label);
+        if (!/^tc\d+/.test(groupKey) || !["ch", "salida"].includes(labelKey)) continue;
+        const number = (groupKey.match(/\d+/) || [""])[0];
+        const isStart = labelKey === "salida";
+        columns.push({
+          col,
+          id: `excel_tc${number}_${isStart ? "salida" : "ch"}`,
+          code: isStart ? `TC ${number}` : `CH ${number}`,
+          place: isStart ? `TC${number} - Salida` : `TC${number} - CH`,
+          note: isStart ? "Salida a tramo" : `Control horario previo a TC${number}`,
+          type: isStart ? "TC" : "CH"
+        });
+      }
+      return columns;
+    }
+
+    function excelSessionMatches(sessionValue, sheetName) {
+      const session = normalizeText(sessionValue || "Sin sesion");
+      const sheet = normalizeText(sheetName);
+      return session === sheet || session.replace(/^sesion\s+/, "") === sheet || session.endsWith(` ${sheet}`);
+    }
+
+    function findPilotForExcelRow(rowData, sheetName, dorsalValue, pilotNameValue) {
+      const currentPilots = rallyPilots();
+      const dorsal = String(dorsalValue || "").trim();
+      const byDorsal = currentPilots.filter((p) => String(p.number || "").trim() === dorsal);
+      const sessionMatch = byDorsal.find((p) => excelSessionMatches(p.session, sheetName));
+      if (sessionMatch) return sessionMatch;
+      if (byDorsal.length === 1) return byDorsal[0];
+      const pilotName = normalizeText(pilotNameValue);
+      if (pilotName) {
+        const byName = currentPilots.find((p) => normalizeText(p.name) === pilotName || normalizeText(p.name).includes(pilotName) || pilotName.includes(normalizeText(p.name)));
+        if (byName) return byName;
+      }
+      return null;
+    }
+
+    function importWorkbookToActiveRally(workbook) {
+      const active = rally();
+      const currentPilots = rallyPilots();
+      if (!active || !currentPilots.length) return toast("Carga primero los inscritos del rally");
+      const importedControls = new Map();
+      const importedSchedule = Object.fromEntries(currentPilots.map((p) => [p.id, { ...(active.schedule?.[p.id] || {}) }]));
+      const unmatched = [];
+      let importedTimes = 0;
+
+      workbook.SheetNames.forEach((sheetName) => {
+        const sheet = workbook.Sheets[sheetName];
+        const headerInfo = findExcelHeader(sheet);
+        if (!headerInfo) return;
+        const headerLabels = [];
+        for (let col = headerInfo.range.s.c; col <= headerInfo.range.e.c; col += 1) headerLabels[col] = normalizeText(excelCellText(sheet, headerInfo.row, col));
+        const dorsalCol = headerLabels.findIndex((value) => value === "dorsal");
+        const pilotNameCol = headerLabels.findIndex((value) => value === "piloto");
+        if (dorsalCol < 0 || pilotNameCol < 0) return;
+        const controlColumns = readExcelControlColumns(sheet, headerInfo);
+        controlColumns.forEach((control) => importedControls.set(control.id, { id: control.id, code: control.code, place: control.place, note: control.note, type: control.type }));
+
+        for (let row = headerInfo.row + 1; row <= headerInfo.range.e.r; row += 1) {
+          const dorsalValue = excelCellText(sheet, row, dorsalCol);
+          const pilotNameValue = excelCellText(sheet, row, pilotNameCol);
+          if (!dorsalValue && !pilotNameValue) continue;
+          const matchedPilot = findPilotForExcelRow(row, sheetName, dorsalValue, pilotNameValue);
+          if (!matchedPilot) {
+            unmatched.push(`${sheetName}: dorsal ${dorsalValue || "--"} ${pilotNameValue || ""}`.trim());
+            continue;
+          }
+          importedSchedule[matchedPilot.id] ||= {};
+          controlColumns.forEach((control) => {
+            const timeValue = excelTimeToValue(excelCell(sheet, row, control.col));
+            if (timeValue) {
+              importedSchedule[matchedPilot.id][control.id] = timeValue;
+              importedTimes += 1;
+            }
+          });
+        }
+      });
+
+      if (!importedControls.size || !importedTimes) return toast("No se encontraron controles TC con horas en el Excel");
+      active.controls = [...importedControls.values()];
+      active.schedule = importedSchedule;
+      active.records ||= {};
+      currentPilots.forEach((p) => { active.records[p.id] ||= {}; });
+      render();
+      queueCarnetSave();
+      toast(`Excel importado: ${importedTimes} horas${unmatched.length ? `, ${unmatched.length} filas sin asignar` : ""}`);
+      if (unmatched.length) console.warn("Filas de Excel sin piloto asignado:", unmatched);
+    }
+
+    async function importControlsExcel(event) {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) return;
+      if (!window.XLSX) return toast("No se pudo cargar el lector de Excel");
+      if (!confirm("Esto reemplazara los controles y actualizara las horas ideales del rally activo. \u00bfContinuar?")) return;
+      try {
+        const buffer = await file.arrayBuffer();
+        const workbook = window.XLSX.read(buffer, { type: "array", cellDates: false });
+        importWorkbookToActiveRally(workbook);
+      } catch (error) {
+        toast(`Excel: ${error.message}`);
+      }
+    }
+
     function render() {
       const active = rally();
-      if (role === "pilot" && active?.cardEnabled === false) {
+      if (isPilotLike() && !canAdmin() && active?.cardEnabled === false) {
         const available = ralliesForPilot(activePilotId);
         if (available.length) activeRallyId = available[0].id;
         else {
@@ -1119,7 +1276,7 @@
       }
       const allowedPilots = rallyPilots();
       if (!allowedPilots.length) {
-        if (role === "pilot") {
+        if (isPilotLike() && !canAdmin()) {
           $("#loginScreen").classList.remove("is-hidden");
           $("#appShell").classList.add("is-hidden");
           toast("No est\u00e1s inscrito en ninguna prueba");
@@ -1153,7 +1310,7 @@
       $("#pilotCar").textContent = `${p.car} - Categor\u00eda ${p.category}`;
       $("#statChecks").textContent = String(completed).padStart(2, "0");
       $("#statNext").textContent = next ? next.code : "Fin";
-      $("#rolePill").textContent = role === "admin" ? "Admin" : "Piloto";
+      $("#rolePill").textContent = canAdmin() ? (role === "office" ? "Office" : "Admin") : "Piloto";
       $("#publishInput").value = active.publishAt;
       $("#cardEnabledSelect").value = String(active.cardEnabled !== false);
       $("#rallySelect").value = active.id;
@@ -1163,7 +1320,7 @@
       $("#schedulePublishInput").value = active.publishAt;
       $("#adminPilotSearch").value = pilotLabel(p);
       $("#cardView").classList.toggle("is-hidden", activeView !== "card");
-      $("#scheduleView").classList.toggle("is-hidden", activeView !== "schedule" || role !== "admin");
+      $("#scheduleView").classList.toggle("is-hidden", activeView !== "schedule" || !canAdmin());
       document.querySelectorAll(".view-tab").forEach((button) => button.classList.toggle("active", button.dataset.view === activeView));
 
       $("#controlRows").innerHTML = active.controls.map((control) => {
@@ -1182,14 +1339,14 @@
         </tr>`;
       }).join("");
 
-      document.querySelectorAll(".admin-only").forEach((node) => node.classList.toggle("is-hidden", role !== "admin"));
-      document.querySelectorAll(".pilot-only").forEach((node) => node.classList.toggle("is-hidden", role !== "pilot"));
+      document.querySelectorAll(".admin-only").forEach((node) => node.classList.toggle("is-hidden", !canAdmin()));
+      document.querySelectorAll(".pilot-only").forEach((node) => node.classList.toggle("is-hidden", !isPilotLike()));
       renderSoundToggle();
-      $("#scheduleView").classList.toggle("is-hidden", activeView !== "schedule" || role !== "admin");
+      $("#scheduleView").classList.toggle("is-hidden", activeView !== "schedule" || !canAdmin());
       fillControlSelect();
       syncActualTime();
       checkUpcomingControlAlert();
-      if (role === "admin") {
+      if (canAdmin()) {
         renderControlsEditor();
         renderSessionDatesEditor();
         renderScheduleGrid();
@@ -1218,16 +1375,24 @@
 
     function userIsAdmin(user, profile) {
       const email = String(profile?.email || user?.email || "").toLowerCase();
-      const metadataRole = String(user?.user_metadata?.role || user?.app_metadata?.role || "").toLowerCase();
-      const profileRole = String(profile?.role || "").toLowerCase();
+      const metadataRole = normalizeRole(user?.user_metadata?.role || user?.app_metadata?.role);
+      const profileRole = normalizeRole(profile?.role);
       return ADMIN_EMAILS.map((item) => item.toLowerCase()).includes(email) || profileRole === "admin" || profile?.is_admin === true || metadataRole === "admin" || user?.user_metadata?.is_admin === true || user?.app_metadata?.is_admin === true;
     }
 
     function userRole(user, profile) {
-      const metadataRole = String(user?.user_metadata?.role || user?.app_metadata?.role || "").toLowerCase();
-      const profileRole = String(profile?.role || "").toLowerCase();
+      const metadataRole = normalizeRole(user?.user_metadata?.role || user?.app_metadata?.role);
+      const profileRole = normalizeRole(profile?.role);
       if (profileRole === "admin" || metadataRole === "admin" || userIsAdmin(user, profile)) return "admin";
+      if (profileRole === "office" || metadataRole === "office") return "office";
       return "pilot";
+    }
+
+    function normalizeRole(value) {
+      const roleValue = String(value || "").trim().toLowerCase();
+      if (["admin", "administrator", "race director", "racedirector", "director", "dirección", "direccion"].includes(roleValue)) return "admin";
+      if (["office", "oficina"].includes(roleValue)) return "office";
+      return roleValue || "pilot";
     }
 
     function licenseFromUser(user, profile) {
@@ -1315,8 +1480,14 @@
       await loadRegistrationsFromSupabase({ silent: true });
       role = userRole(data.user, profile);
       activeView = "card";
-      if (role === "admin") {
-        activePilotId = rallyPilots()[0]?.id || pilots[0]?.id;
+      if (canAdmin()) {
+        const license = licenseFromUser(data.user, profile);
+        if (license && ralliesForPilot(license, { includeDisabled: true }).length) {
+          activePilotId = license;
+          selectFirstRallyForPilot(license);
+        } else {
+          activePilotId = rallyPilots()[0]?.id || pilots[0]?.id;
+        }
       } else {
         const license = licenseFromUser(data.user, profile);
         if (!license) return toast("No encuentro tu licencia de piloto vinculada a esta cuenta");
@@ -1327,7 +1498,7 @@
       $("#loginScreen").classList.add("is-hidden");
       $("#appShell").classList.remove("is-hidden");
       render();
-      toast(role === "admin" ? "Direccion de carrera activa" : "Carnet cargado");
+      toast(canAdmin() ? "Direccion de carrera activa" : "Carnet cargado");
     }
 
     async function loadRegistrationsFromSupabase(options = {}) {
@@ -1397,6 +1568,7 @@
     $("#pilotRallySelect").addEventListener("change", () => selectPilotRally($("#pilotRallySelect").value));
     $("#adminRally").addEventListener("change", () => { activeRallyId = $("#adminRally").value; render(); });
     $("#scheduleRally").addEventListener("change", () => { activeRallyId = $("#scheduleRally").value; render(); });
+    $("#excelImportInput").addEventListener("change", importControlsExcel);
     $("#sortScheduleByTimeButton").addEventListener("click", () => {
       scheduleSortMode = "time";
       renderScheduleGrid();
